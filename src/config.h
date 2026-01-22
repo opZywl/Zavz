@@ -8,6 +8,11 @@ extern bool customProcName;
 extern std::wstring delaystr;
 extern std::wstring dllPath;
 extern std::wstring procName;
+extern std::wstring fdpJarPath;
+extern std::wstring jvmArgs;
+extern int injectionMethod;
+extern bool autoCloseAfterInject;
+extern bool randomTitle;
 
 
 class config {
