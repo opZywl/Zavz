@@ -361,6 +361,15 @@ void cMain::OnBadlionCheckBox(wxCommandEvent& evt) {
     evt.Skip();
 }
 
+void cMain::OnBadlionCheckBox(wxCommandEvent& evt) {
+    if (check_Badlion->IsChecked()) {
+        wxMessageBox("Injector in beta disponivel pro badlion em breve.. follow https://github.com/opZywl for new updates and download badlion version.", "YZY Injector", wxICON_INFORMATION);
+        check_Badlion->SetValue(false);
+        check_Lunar->SetValue(true);
+    }
+    evt.Skip();
+}
+
 void cMain::disableAutoInject() {
     check_Custom->Enable();
     if (check_Custom->IsChecked()) {
