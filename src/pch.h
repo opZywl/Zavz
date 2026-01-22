@@ -1,7 +1,10 @@
 #include <wx/wx.h>
 #include <wx/taskbar.h>
 #include <wx/notifmsg.h>
+#include <wx/gauge.h>
+#include <wx/timer.h>
 #include <windows.h>
 #include <fstream>
 #include <string>
 #include <thread>
+#include <ctime>

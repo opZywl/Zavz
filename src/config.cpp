@@ -21,6 +21,10 @@ std::wstring delaystr = L"5";
 std::wstring dllPath = L"Click \"Select\" to select the dll file";
 std::wstring procName = L"javaw.exe";
 std::wstring fdpJarPath;
+std::wstring jvmArgs;
+int injectionMethod = 0;
+bool autoCloseAfterInject = false;
+bool randomTitle = false;
 
 config::config()
 {
@@ -118,6 +122,14 @@ std::wstring config::makeConfig()
     configstr += L"procName=" + procName + '\n';
     // fdpJarPath
     configstr += L"fdpJarPath=" + fdpJarPath + '\n';
+    // jvmArgs
+    configstr += L"jvmArgs=" + jvmArgs + '\n';
+    // injectionMethod
+    configstr += L"injectionMethod=" + std::to_wstring(injectionMethod) + '\n';
+    // autoCloseAfterInject
+    configstr += autoCloseAfterInject == true ? L"autoCloseAfterInject=true\n" : L"autoCloseAfterInject=false\n";
+    // randomTitle
+    configstr += randomTitle == true ? L"randomTitle=true\n" : L"randomTitle=false\n";
 
     return configstr;
 }
@@ -143,6 +155,22 @@ void config::analyseState()
     else if (name == "fdpJarPath")
     {
         fdpJarPath = value;
+    }
+    else if (name == "jvmArgs")
+    {
+        jvmArgs = value;
+    }
+    else if (name == "injectionMethod")
+    {
+        injectionMethod = analyseInt();
+    }
+    else if (name == "autoCloseAfterInject")
+    {
+        autoCloseAfterInject = analyseBool();
+    }
+    else if (name == "randomTitle")
+    {
+        randomTitle = analyseBool();
     }
     else
     {
