@@ -1,0 +1,15 @@
+1) Multi-profile presets (per client): save multiple DLL/JAR combos and switch with one click.
+2) Auto-detect installed clients (Lunar, Badlion, etc.) and prefill paths/versions.
+3) Quick launch + inject: start the client and inject automatically after process spawn.
+4) Health checks: verify DLL/JAR integrity (hash + size) before injection.
+5) Injection logs: detailed logs with timestamps and export to file.
+6) Safe mode: dry-run that validates target process + permissions without injecting.
+7) Theme switcher: light/dark and custom accent colors.
+8) Hotkey support: global hotkey for inject/hide/show.
+9) Auto-update checker for injector + client DLL/JAR versions.
+10) Portable mode: store configs next to the executable.
+11) Backup/restore config with a single button.
+12) Smart process picker with search and live list of running javaw.exe instances.
+13) Sandbox warnings: detect running anti-cheat / protected processes and show guidance.
+14) Localization: PT-BR/EN language toggle for all UI strings.
+15) Crash reporting (local only): capture minimal crash data to help debugging.
