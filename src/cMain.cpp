@@ -25,13 +25,13 @@ EVT_TIMER(301, OnWaitTimer)
 wxEND_EVENT_TABLE();
 
 
-cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxDefaultPosition, wxSize(520, 520), wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX | wxCLIP_CHILDREN), fdpMode(useFdpLoader) {
+cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxDefaultPosition, wxSize(560, 560), wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX | wxCLIP_CHILDREN), fdpMode(useFdpLoader) {
     wxIcon icon(icon_xpm); // icons are shit to do but the technike is actually quite nice
     this->SetIcon(icon);
-    this->SetBackgroundColour(wxColour(18, 18, 18, 255));
+    this->SetBackgroundColour(wxColour(0, 0, 0, 255));
 
     mainPanel = new wxPanel(this, wxID_ANY);
-    mainPanel->SetBackgroundColour(wxColour(18, 18, 18, 255));
+    mainPanel->SetBackgroundColour(wxColour(0, 0, 0, 255));
 	btn_Inject = new wxButton(mainPanel, 101, "Inject");
    	btn_Hide = new wxButton(mainPanel, 102, "Hide Menu");
     btn_Select = new wxButton(mainPanel, 103, "Select DLL");
@@ -84,9 +84,11 @@ cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxD
     openJarDialog = new wxFileDialog(this, "Select the .jar file", working_dir, "" ,"Java archive (*.jar)|*.jar", wxFD_OPEN);
     waitTimer = new wxTimer(this, 301);
 
-    wxColour textColour(230, 230, 230);
-    wxColour inputColour(30, 30, 30);
-    wxColour accent(140, 80, 255);
+    wxColour textColour(235, 235, 235);
+    wxColour inputColour(24, 24, 24);
+    wxColour accent(64, 140, 255);
+    wxColour panelBorder(42, 42, 42);
+    wxColour buttonDark(40, 40, 40);
     mainPanel->SetForegroundColour(textColour);
     SetForegroundColour(textColour);
     txt_Name->SetForegroundColour(textColour);
@@ -97,12 +99,12 @@ cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxD
     txt_Name->SetBackgroundColour(inputColour);
     txt_Path->SetBackgroundColour(inputColour);
     txt_JvmArgs->SetBackgroundColour(inputColour);
-    txt_Log->SetBackgroundColour(wxColour(20, 20, 20));
+    txt_Log->SetBackgroundColour(wxColour(16, 16, 16));
     txt_JarPath->SetBackgroundColour(inputColour);
     label_Wait->SetForegroundColour(textColour);
     label_JvmArgs->SetForegroundColour(textColour);
     label_Method->SetForegroundColour(textColour);
-    gauge_Wait->SetForegroundColour(accent);
+    gauge_Wait->SetForegroundColour(wxColour(70, 220, 140));
     check_Custom->SetForegroundColour(textColour);
     check_AutoClose->SetForegroundColour(textColour);
     check_RandomTitle->SetForegroundColour(textColour);
@@ -110,10 +112,19 @@ cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxD
     check_Badlion->SetForegroundColour(textColour);
     btn_Inject->SetBackgroundColour(accent);
     btn_Inject->SetForegroundColour(wxColour(255, 255, 255));
-    btn_Watch->SetBackgroundColour(wxColour(45, 45, 45));
-    btn_Watch->SetForegroundColour(textColour);
-    btn_ToggleLog->SetBackgroundColour(wxColour(45, 45, 45));
+    btn_Watch->SetBackgroundColour(accent);
+    btn_Watch->SetForegroundColour(wxColour(255, 255, 255));
+    btn_Hide->SetBackgroundColour(buttonDark);
+    btn_Hide->SetForegroundColour(textColour);
+    btn_Select->SetBackgroundColour(buttonDark);
+    btn_Select->SetForegroundColour(textColour);
+    btn_ToggleLog->SetBackgroundColour(buttonDark);
     btn_ToggleLog->SetForegroundColour(textColour);
+    btn_SaveJar->SetBackgroundColour(accent);
+    btn_SaveJar->SetForegroundColour(wxColour(255, 255, 255));
+    btn_ChangeJar->SetBackgroundColour(buttonDark);
+    btn_ChangeJar->SetForegroundColour(textColour);
+    btn_ToggleLog->SetMinSize(wxSize(-1, 32));
 
     txt_Log->Hide();
     txt_Name->SetMinSize(wxSize(220, -1));
@@ -145,26 +156,31 @@ cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxD
     topSizer->Add(rightTargetSizer, 1, wxEXPAND);
     mainSizer->Add(topSizer, 0, wxEXPAND | wxALL, 12);
 
+    wxStaticText *label_Status = new wxStaticText(mainPanel, wxID_ANY, "Watcher Status");
+    label_Status->SetForegroundColour(textColour);
     wxBoxSizer *waitSizer = new wxBoxSizer(wxHORIZONTAL);
     waitSizer->Add(label_Wait, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
     waitSizer->Add(gauge_Wait, 0, wxALIGN_CENTER_VERTICAL);
+    mainSizer->Add(label_Status, 0, wxLEFT | wxRIGHT | wxBOTTOM, 6);
     mainSizer->Add(waitSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
+    wxStaticBoxSizer *advancedSizer = new wxStaticBoxSizer(wxVERTICAL, mainPanel, "Advanced Settings");
+    advancedSizer->GetStaticBox()->SetForegroundColour(textColour);
     wxFlexGridSizer *optionSizer = new wxFlexGridSizer(2, 2, 8, 12);
     optionSizer->AddGrowableCol(1, 1);
     optionSizer->Add(label_JvmArgs, 0, wxALIGN_CENTER_VERTICAL);
     optionSizer->Add(txt_JvmArgs, 1, wxEXPAND);
     optionSizer->Add(label_Method, 0, wxALIGN_CENTER_VERTICAL);
     optionSizer->Add(choice_Method, 1, wxEXPAND);
-    mainSizer->Add(optionSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+    advancedSizer->Add(optionSizer, 0, wxEXPAND | wxALL, 12);
 
     wxBoxSizer *toggleSizer = new wxBoxSizer(wxHORIZONTAL);
     toggleSizer->Add(check_AutoClose, 0, wxRIGHT, 12);
     toggleSizer->Add(check_RandomTitle, 0, wxRIGHT, 12);
-    toggleSizer->AddStretchSpacer();
-    toggleSizer->Add(btn_ToggleLog, 0);
-    mainSizer->Add(toggleSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+    advancedSizer->Add(toggleSizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 12);
+    mainSizer->Add(advancedSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
+    mainSizer->Add(btn_ToggleLog, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
     mainSizer->Add(txt_Log, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
     wxStaticBoxSizer *fdpSizer = new wxStaticBoxSizer(wxVERTICAL, mainPanel, "FDP Loader");
@@ -366,6 +382,7 @@ void cMain::OnWatchButton(wxCommandEvent& evt) {
         watcherActive = false;
         btn_Watch->SetLabel("Start Watcher");
         label_Wait->SetLabel("Watcher stopped.");
+        gauge_Wait->SetValue(0);
         waitTimer->Stop();
         evt.Skip();
         return;
@@ -400,8 +417,12 @@ void cMain::OnToggleLogButton(wxCommandEvent& evt) {
 }
 
 void cMain::OnWaitTimer(wxTimerEvent& evt) {
-    if (watcherActive && gauge_Wait) {
-        gauge_Wait->Pulse();
+    if (gauge_Wait) {
+        if (watcherActive) {
+            gauge_Wait->Pulse();
+        } else {
+            gauge_Wait->SetValue(0);
+        }
     }
     evt.Skip();
 }
