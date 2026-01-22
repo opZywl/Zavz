@@ -19,7 +19,7 @@ EVT_BUTTON(106, OnWatchButton)
 EVT_BUTTON(107, OnToggleLogButton)
 
 EVT_CHECKBOX(201, OnCustomCheckBox)
-EVT_CHECKBOX(203, OnBadlionCheckBox)
+EVT_CHECKBOX(203, OnBadlionToggle)
 EVT_TIMER(301, OnWaitTimer)
 
 wxEND_EVENT_TABLE();
@@ -352,16 +352,7 @@ void cMain::OnCustomCheckBox(wxCommandEvent& evt) {
 
 bool cheapThreadFix = false;
 
-void cMain::OnBadlionCheckBox(wxCommandEvent& evt) {
-    if (check_Badlion->IsChecked()) {
-        wxMessageBox("Injector in beta disponivel pro badlion em breve.. follow https://github.com/opZywl for new updates and download badlion version.", "YZY Injector", wxICON_INFORMATION);
-        check_Badlion->SetValue(false);
-        check_Lunar->SetValue(true);
-    }
-    evt.Skip();
-}
-
-void cMain::OnBadlionCheckBox(wxCommandEvent& evt) {
+void cMain::OnBadlionToggle(wxCommandEvent& evt) {
     if (check_Badlion->IsChecked()) {
         wxMessageBox("Injector in beta disponivel pro badlion em breve.. follow https://github.com/opZywl for new updates and download badlion version.", "YZY Injector", wxICON_INFORMATION);
         check_Badlion->SetValue(false);

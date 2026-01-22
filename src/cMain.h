@@ -51,7 +51,7 @@ public:
 	void OnWaitTimer(wxTimerEvent &evt);
 
 	void OnCustomCheckBox(wxCommandEvent &evt);
-	void OnBadlionCheckBox(wxCommandEvent &evt);
+	void OnBadlionToggle(wxCommandEvent &evt);
 
 	void onTaskBarDClick(wxCommandEvent &evt);
 
