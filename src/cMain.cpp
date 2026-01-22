@@ -25,37 +25,37 @@ EVT_TIMER(301, OnWaitTimer)
 wxEND_EVENT_TABLE();
 
 
-cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxDefaultPosition, wxSize(360, 370), wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX | wxCLIP_CHILDREN), fdpMode(useFdpLoader) {
+cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxDefaultPosition, wxSize(520, 520), wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLOSE_BOX | wxCLIP_CHILDREN), fdpMode(useFdpLoader) {
     wxIcon icon(icon_xpm); // icons are shit to do but the technike is actually quite nice
     this->SetIcon(icon);
     this->SetBackgroundColour(wxColour(18, 18, 18, 255));
 
     mainPanel = new wxPanel(this, wxID_ANY);
     mainPanel->SetBackgroundColour(wxColour(18, 18, 18, 255));
-	btn_Inject = new wxButton(mainPanel, 101, "Inject", wxPoint(10, 10), wxSize(110, 40));
-   	btn_Hide = new wxButton(mainPanel, 102, "Hide Menu", wxPoint(10, 55), wxSize(110, 24));
-    btn_Select = new wxButton(mainPanel, 103, "Select DLL", wxPoint(10, 90), wxSize(110, 24));
-	txt_Name = new wxTextCtrl(mainPanel, wxID_ANY, "javaw.exe", wxPoint(130, 10), wxSize(200, 22));
-	check_Custom = new wxCheckBox(mainPanel, 201, "Custom Target", wxPoint(130, 36), wxSize(200, 20));
-    btn_Watch = new wxButton(mainPanel, 106, "Start Watcher", wxPoint(130, 60), wxSize(200, 24));
-	txt_Path = new wxTextCtrl(mainPanel, wxID_ANY, "Click \"Select DLL\" to select the dll file", wxPoint(130, 90), wxSize(200, 22));
-    label_Wait = new wxStaticText(mainPanel, wxID_ANY, "Waiting for javaw.exe...", wxPoint(10, 125), wxSize(200, 20));
-    gauge_Wait = new wxGauge(mainPanel, wxID_ANY, 100, wxPoint(210, 122), wxSize(120, 20));
-    label_JvmArgs = new wxStaticText(mainPanel, wxID_ANY, "JVM Args", wxPoint(10, 132), wxSize(120, 16));
-    txt_JvmArgs = new wxTextCtrl(mainPanel, wxID_ANY, "", wxPoint(10, 150), wxSize(320, 22));
-    label_Method = new wxStaticText(mainPanel, wxID_ANY, "Injection Method", wxPoint(10, 168), wxSize(140, 16));
-    choice_Method = new wxChoice(mainPanel, wxID_ANY, wxPoint(10, 186), wxSize(160, 24));
+	btn_Inject = new wxButton(mainPanel, 101, "Inject");
+   	btn_Hide = new wxButton(mainPanel, 102, "Hide Menu");
+    btn_Select = new wxButton(mainPanel, 103, "Select DLL");
+	txt_Name = new wxTextCtrl(mainPanel, wxID_ANY, "javaw.exe");
+	check_Custom = new wxCheckBox(mainPanel, 201, "Custom Target");
+    btn_Watch = new wxButton(mainPanel, 106, "Start Watcher");
+	txt_Path = new wxTextCtrl(mainPanel, wxID_ANY, "Click \"Select DLL\" to select the dll file");
+    label_Wait = new wxStaticText(mainPanel, wxID_ANY, "Waiting for javaw.exe...");
+    gauge_Wait = new wxGauge(mainPanel, wxID_ANY, 100);
+    label_JvmArgs = new wxStaticText(mainPanel, wxID_ANY, "JVM Args");
+    txt_JvmArgs = new wxTextCtrl(mainPanel, wxID_ANY, "");
+    label_Method = new wxStaticText(mainPanel, wxID_ANY, "Injection Method");
+    choice_Method = new wxChoice(mainPanel, wxID_ANY);
     choice_Method->Append("Standard (LoadLibrary)");
     choice_Method->Append("Manual Map");
-    check_AutoClose = new wxCheckBox(mainPanel, wxID_ANY, "Auto-close after inject", wxPoint(180, 188), wxSize(170, 20));
-    check_RandomTitle = new wxCheckBox(mainPanel, wxID_ANY, "Random Title", wxPoint(10, 214), wxSize(120, 20));
-    btn_ToggleLog = new wxButton(mainPanel, 107, "Show Logs", wxPoint(180, 212), wxSize(150, 24));
-    txt_Log = new wxTextCtrl(mainPanel, wxID_ANY, "", wxPoint(10, 242), wxSize(320, 90), wxTE_MULTILINE | wxTE_READONLY);
-    btn_SaveJar = new wxButton(mainPanel, 104, "Save", wxPoint(10, 340), wxSize(60, 22));
-    btn_ChangeJar = new wxButton(mainPanel, 105, "Change", wxPoint(80, 340), wxSize(70, 22));
-    txt_JarPath = new wxTextCtrl(mainPanel, wxID_ANY, "No .jar selected", wxPoint(160, 340), wxSize(170, 45), wxTE_MULTILINE | wxTE_READONLY);
-    check_Lunar = new wxCheckBox(mainPanel, wxID_ANY, "Lunar Client", wxPoint(10, 370), wxSize(120, 20));
-    check_Badlion = new wxCheckBox(mainPanel, 203, "Badlion Client", wxPoint(140, 370), wxSize(120, 20));
+    check_AutoClose = new wxCheckBox(mainPanel, wxID_ANY, "Auto-close after inject");
+    check_RandomTitle = new wxCheckBox(mainPanel, wxID_ANY, "Random Title");
+    btn_ToggleLog = new wxButton(mainPanel, 107, "Show Logs");
+    txt_Log = new wxTextCtrl(mainPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
+    btn_SaveJar = new wxButton(mainPanel, 104, "Save");
+    btn_ChangeJar = new wxButton(mainPanel, 105, "Change");
+    txt_JarPath = new wxTextCtrl(mainPanel, wxID_ANY, "No .jar selected", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
+    check_Lunar = new wxCheckBox(mainPanel, wxID_ANY, "Lunar Client");
+    check_Badlion = new wxCheckBox(mainPanel, 203, "Badlion Client");
     CreateStatusBar(1);
     SetStatusText("v0.1 made by github.com/opZywl", 0);
 
@@ -83,22 +83,6 @@ cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxD
     openDialog = new wxFileDialog(this, "Select the .dll file", working_dir, "YZY.Client.dll" ,"Dynamic link library (*.dll)|*.dll", wxFD_OPEN);
     openJarDialog = new wxFileDialog(this, "Select the .jar file", working_dir, "" ,"Java archive (*.jar)|*.jar", wxFD_OPEN);
     waitTimer = new wxTimer(this, 301);
-
-    if (fdpMode) {
-        SetSize(wxSize(360, 430));
-        check_Lunar->SetValue(true);
-        check_Badlion->SetValue(false);
-        if (!SetupFdpLoader()) {
-            Close();
-            return;
-        }
-    } else {
-        btn_SaveJar->Hide();
-        btn_ChangeJar->Hide();
-        txt_JarPath->Hide();
-        check_Lunar->Hide();
-        check_Badlion->Hide();
-    }
 
     wxColour textColour(230, 230, 230);
     wxColour inputColour(30, 30, 30);
@@ -132,6 +116,86 @@ cMain::cMain(bool useFdpLoader) : wxFrame(nullptr, wxID_ANY, "YZY Injector", wxD
     btn_ToggleLog->SetForegroundColour(textColour);
 
     txt_Log->Hide();
+    txt_Name->SetMinSize(wxSize(220, -1));
+    txt_Path->SetMinSize(wxSize(280, -1));
+    txt_JvmArgs->SetMinSize(wxSize(300, -1));
+    txt_Log->SetMinSize(wxSize(-1, 120));
+    txt_JarPath->SetMinSize(wxSize(-1, 50));
+    gauge_Wait->SetMinSize(wxSize(160, 18));
+
+    wxBoxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *topSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *leftButtonsSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *rightTargetSizer = new wxBoxSizer(wxVERTICAL);
+
+    btn_Inject->SetMinSize(wxSize(120, 42));
+    leftButtonsSizer->Add(btn_Inject, 0, wxEXPAND | wxBOTTOM, 8);
+    leftButtonsSizer->Add(btn_Hide, 0, wxEXPAND | wxBOTTOM, 8);
+    leftButtonsSizer->Add(btn_Select, 0, wxEXPAND);
+
+    wxStaticText *label_Target = new wxStaticText(mainPanel, wxID_ANY, "Target Process");
+    label_Target->SetForegroundColour(textColour);
+    rightTargetSizer->Add(label_Target, 0, wxBOTTOM, 4);
+    rightTargetSizer->Add(txt_Name, 0, wxEXPAND | wxBOTTOM, 6);
+    rightTargetSizer->Add(check_Custom, 0, wxBOTTOM, 6);
+    rightTargetSizer->Add(btn_Watch, 0, wxEXPAND | wxBOTTOM, 6);
+    rightTargetSizer->Add(txt_Path, 0, wxEXPAND);
+
+    topSizer->Add(leftButtonsSizer, 0, wxRIGHT, 12);
+    topSizer->Add(rightTargetSizer, 1, wxEXPAND);
+    mainSizer->Add(topSizer, 0, wxEXPAND | wxALL, 12);
+
+    wxBoxSizer *waitSizer = new wxBoxSizer(wxHORIZONTAL);
+    waitSizer->Add(label_Wait, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+    waitSizer->Add(gauge_Wait, 0, wxALIGN_CENTER_VERTICAL);
+    mainSizer->Add(waitSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+    wxFlexGridSizer *optionSizer = new wxFlexGridSizer(2, 2, 8, 12);
+    optionSizer->AddGrowableCol(1, 1);
+    optionSizer->Add(label_JvmArgs, 0, wxALIGN_CENTER_VERTICAL);
+    optionSizer->Add(txt_JvmArgs, 1, wxEXPAND);
+    optionSizer->Add(label_Method, 0, wxALIGN_CENTER_VERTICAL);
+    optionSizer->Add(choice_Method, 1, wxEXPAND);
+    mainSizer->Add(optionSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+    wxBoxSizer *toggleSizer = new wxBoxSizer(wxHORIZONTAL);
+    toggleSizer->Add(check_AutoClose, 0, wxRIGHT, 12);
+    toggleSizer->Add(check_RandomTitle, 0, wxRIGHT, 12);
+    toggleSizer->AddStretchSpacer();
+    toggleSizer->Add(btn_ToggleLog, 0);
+    mainSizer->Add(toggleSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+    mainSizer->Add(txt_Log, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+    wxStaticBoxSizer *fdpSizer = new wxStaticBoxSizer(wxVERTICAL, mainPanel, "FDP Loader");
+    fdpSizer->GetStaticBox()->SetForegroundColour(textColour);
+    wxBoxSizer *fdpControlsSizer = new wxBoxSizer(wxHORIZONTAL);
+    fdpControlsSizer->Add(btn_SaveJar, 0, wxRIGHT, 8);
+    fdpControlsSizer->Add(btn_ChangeJar, 0);
+    fdpControlsSizer->AddStretchSpacer();
+    fdpSizer->Add(fdpControlsSizer, 0, wxEXPAND | wxBOTTOM, 6);
+    fdpSizer->Add(txt_JarPath, 0, wxEXPAND | wxBOTTOM, 6);
+    wxBoxSizer *clientSizer = new wxBoxSizer(wxHORIZONTAL);
+    clientSizer->Add(check_Lunar, 0, wxRIGHT, 12);
+    clientSizer->Add(check_Badlion, 0);
+    fdpSizer->Add(clientSizer, 0, wxEXPAND);
+    mainSizer->Add(fdpSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+    if (fdpMode) {
+        check_Lunar->SetValue(true);
+        check_Badlion->SetValue(false);
+        if (!SetupFdpLoader()) {
+            Close();
+            return;
+        }
+    } else {
+        fdpSizer->Show(false);
+    }
+
+    mainPanel->SetSizer(mainSizer);
+    mainPanel->Layout();
+    mainSizer->Fit(this);
+    SetMinSize(wxSize(520, fdpMode ? 560 : 460));
     if (randomTitle) {
         wxArrayString titles;
         titles.Add("Notepad");
@@ -320,11 +384,17 @@ void cMain::OnToggleLogButton(wxCommandEvent& evt) {
     if (txt_Log->IsShown()) {
         txt_Log->Hide();
         btn_ToggleLog->SetLabel("Show Logs");
-        Layout();
+        mainPanel->Layout();
+        if (mainPanel->GetSizer()) {
+            mainPanel->GetSizer()->Fit(this);
+        }
     } else {
         txt_Log->Show();
         btn_ToggleLog->SetLabel("Hide Logs");
-        Layout();
+        mainPanel->Layout();
+        if (mainPanel->GetSizer()) {
+            mainPanel->GetSizer()->Fit(this);
+        }
     }
     evt.Skip();
 }
