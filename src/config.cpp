@@ -19,7 +19,8 @@ char working_dir[1024];
 bool customProcName = false;
 std::wstring delaystr = L"5";
 std::wstring dllPath = L"Click \"Select\" to select the dll file";
-std::wstring procName = L"minecraft.windows.exe";
+std::wstring procName = L"javaw.exe";
+std::wstring fdpJarPath;
 
 config::config()
 {
@@ -62,7 +63,7 @@ bool config::saveConfig()
     }
     else
     {
-        wxMessageBox("Can't create config file!", "Fate Client ERROR", wxICON_ERROR);
+        wxMessageBox("Can't create config file!", "YZY Injector ERROR", wxICON_ERROR);
         // std::cout << "Couldn't create config file on " + path << std::endl;
         return true;
     }
@@ -104,7 +105,8 @@ int config::analyseInt()
 std::wstring config::makeConfig()
 {
 
-    configstr += L"#Fate Client injector config file\n";
+    configstr.clear();
+    configstr += L"#YZY Injector config file\n";
 
     // customProcName
     configstr += customProcName == true ? L"customProcName=true\n" : L"customProcName=false\n";
@@ -114,6 +116,8 @@ std::wstring config::makeConfig()
     configstr += L"dllPath=" + dllPath + '\n';
     // procName
     configstr += L"procName=" + procName + '\n';
+    // fdpJarPath
+    configstr += L"fdpJarPath=" + fdpJarPath + '\n';
 
     return configstr;
 }
@@ -136,8 +140,12 @@ void config::analyseState()
     {
         procName = value;
     }
+    else if (name == "fdpJarPath")
+    {
+        fdpJarPath = value;
+    }
     else
     {
-        wxMessageBox("\"" + name + "\" Is not a known Entry\nDeleting the config file might help!", "Fate Config WARNING", wxICON_INFORMATION);
+        wxMessageBox("\"" + name + "\" Is not a known Entry\nDeleting the config file might help!", "YZY Config WARNING", wxICON_INFORMATION);
     }
 }
