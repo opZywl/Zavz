@@ -8,6 +8,7 @@ extern bool customProcName;
 extern std::wstring delaystr;
 extern std::wstring dllPath;
 extern std::wstring procName;
+extern std::wstring fdpJarPath;
 
 
 class config {

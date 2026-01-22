@@ -25,9 +25,17 @@ bool cApp::OnInit() {
         cfg.saveConfig();
     }
 
-	m_frame1 = new cMain();
+    wxArrayString choices;
+    choices.Add("Default");
+    choices.Add("FDP Loader");
+    wxSingleChoiceDialog modeDialog(nullptr, "Select how you want to run the injector.", "YZY Injector", choices);
+    if (modeDialog.ShowModal() != wxID_OK) {
+        return false;
+    }
+
+    bool useFdpLoader = modeDialog.GetStringSelection() == "FDP Loader";
+	m_frame1 = new cMain(useFdpLoader);
 	ref = m_frame1;
 	m_frame1->Show();
 	return true;
 }
-
