@@ -176,6 +176,17 @@ void cMain::OnChangeJarButton(wxCommandEvent& evt) {
         wxFileName::Mkdir(fdpDir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
         wxFileName jarName(jarSrcPath);
         wxString jarDestPath = fdpDir + "\\" + jarName.GetFullName();
+        wxFileName srcFile(jarSrcPath);
+        wxFileName destFile(jarDestPath);
+        srcFile.Normalize();
+        destFile.Normalize();
+        if (srcFile.GetFullPath() == destFile.GetFullPath() || wxFileExists(jarDestPath)) {
+            txt_JarPath->SetValue(jarDestPath);
+            fdpJarPath = jarDestPath.ToStdWstring();
+            SetStatusText("FDP Loader: .jar already in .fdpclient.", 0);
+            evt.Skip();
+            return;
+        }
         if (!wxCopyFile(jarSrcPath, jarDestPath, true)) {
             wxMessageBox("Couldn't copy the .jar to your .fdpclient folder.", "YZY Injector", wxICON_ERROR);
             evt.Skip();
@@ -344,6 +355,15 @@ bool cMain::SetupFdpLoader() {
     wxFileName::Mkdir(fdpDir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
     wxFileName jarName(jarSrcPath);
     wxString jarDestPath = fdpDir + "\\" + jarName.GetFullName();
+    wxFileName srcFile(jarSrcPath);
+    wxFileName destFile(jarDestPath);
+    srcFile.Normalize();
+    destFile.Normalize();
+    if (srcFile.GetFullPath() == destFile.GetFullPath() || wxFileExists(jarDestPath)) {
+        txt_JarPath->SetValue(jarDestPath);
+        fdpJarPath = jarDestPath.ToStdWstring();
+        return true;
+    }
     if (!wxCopyFile(jarSrcPath, jarDestPath, true)) {
         wxMessageBox("Couldn't copy the .jar to your .fdpclient folder.", "YZY Injector", wxICON_ERROR);
         return false;
