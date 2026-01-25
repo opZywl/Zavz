@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -30,7 +30,6 @@ const defaultSettings: InjectorSettings = {
 
 const App = () => {
   const [status, setStatus] = useState("Waiting for process...");
-  const [statusTimestamp, setStatusTimestamp] = useState<Date | null>(null);
   const [target, setTarget] = useState("javaw.exe");
   const [customTarget, setCustomTarget] = useState(false);
   const [dllPath, setDllPath] = useState("");
@@ -68,7 +67,6 @@ const App = () => {
     let unlisten: (() => void) | null = null;
     listen<string>("watcher-status", (event) => {
       setStatus(event.payload);
-      setStatusTimestamp(new Date());
 
       // Add log entry based on status
       if (event.payload.includes('Injected')) {
@@ -107,13 +105,6 @@ const App = () => {
       });
   }, [settings.randomWindowTitle]);
 
-  const statusMeta = useMemo(() => {
-    if (!statusTimestamp) {
-      return "Status sincronizado";
-    }
-    return `Atualizado em ${statusTimestamp.toLocaleTimeString()}`;
-  }, [statusTimestamp]);
-
   const handleInject = async () => {
     if (!dllPath) {
       const msg = "Selecione uma DLL antes de injetar.";
@@ -134,7 +125,6 @@ const App = () => {
         },
       });
       setStatus(response);
-      setStatusTimestamp(new Date());
       addLog(response, 'success');
 
       if (settings.autoClose) {
@@ -146,7 +136,6 @@ const App = () => {
         ? error.message
         : "Falha ao injetar DLL.";
       setStatus(errorMsg);
-      setStatusTimestamp(new Date());
       addLog(errorMsg, 'error');
     }
   };
@@ -176,11 +165,9 @@ const App = () => {
         setWatcherEnabled(true);
         addLog(`Watcher iniciado - Monitorando ${target}`, 'success');
       }
-      setStatusTimestamp(new Date());
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Falha ao iniciar watcher.";
       setStatus(errorMsg);
-      setStatusTimestamp(new Date());
       addLog(errorMsg, 'error');
     }
   };
