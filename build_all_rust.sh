@@ -13,7 +13,7 @@ fi
 mkdir -p "${DIST_DIR}"
 
 echo "==> Building Tauri (release)"
-cargo +nightly build --manifest-path "${TAURI_DIR}/Cargo.toml" --release
+cargo +nightly-2023-11-01 build --manifest-path "${TAURI_DIR}/Cargo.toml" --release
 
 EXE_PATH="$(find "${TAURI_DIR}/target/release" -maxdepth 1 -name '*.exe' -print -quit || true)"
 if [[ -z "${EXE_PATH}" ]]; then
