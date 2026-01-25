@@ -1,2 +1,28 @@
 .vscode
 build
+
+# Legacy C++ build
+*.o
+*.exe
+*.dll
+
+# Node.js
+node_modules/
+dist/
+.env
+
+# Rust
+src-tauri/target/
+Cargo.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Tauri
+src-tauri/Cargo.lock

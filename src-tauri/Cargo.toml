@@ -10,6 +10,10 @@ sysinfo = "0.30"
 dll-syringe = { version = "0.17", default-features = false, features = ["syringe"] }
 tokio = { version = "1.37", features = ["sync", "time"] }
 tauri = { version = "2.3", features = [] }
+dirs = "5.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winnt", "aclapi", "accctrl", "sddlapi", "errhandlingapi", "wow64apiset", "minwindef", "handleapi"] }
 
 [build-dependencies]
 tauri-build = { version = "2.3", features = [] }
