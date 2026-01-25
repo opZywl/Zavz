@@ -80,7 +80,9 @@ fn is_pe_64bit(path: &Path) -> Result<bool, String> {
 /// Check if a process is 64-bit
 #[cfg(target_os = "windows")]
 fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
-    let handle = process.handle().as_raw_handle() as *mut _;
+    use std::os::windows::io::AsRawHandle;
+
+    let handle = process.as_handle().as_raw_handle() as *mut _;
     let mut is_wow64 = FALSE;
 
     unsafe {
@@ -108,12 +110,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
     use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::Foundation::{ERROR_SUCCESS, GENERIC_READ, GENERIC_EXECUTE};
     use windows_sys::Win32::Security::{
+        ACL, PSID, DACL_SECURITY_INFORMATION, SE_FILE_OBJECT,
+    };
+    use windows_sys::Win32::Security::Authorization::{
         ConvertStringSidToSidW, GetNamedSecurityInfoW, SetNamedSecurityInfoW,
-        SetEntriesInAclW, DACL_SECURITY_INFORMATION, SE_FILE_OBJECT,
-        ACL, PSID, EXPLICIT_ACCESS_W, TRUSTEE_W, SET_ACCESS,
+        SetEntriesInAclW, EXPLICIT_ACCESS_W, TRUSTEE_W, SET_ACCESS,
         SUB_CONTAINERS_AND_OBJECTS_INHERIT, TRUSTEE_IS_SID, TRUSTEE_IS_WELL_KNOWN_GROUP,
     };
-    use windows_sys::Win32::Foundation::LocalFree;
+    use windows_sys::Win32::System::Memory::LocalFree;
 
     let wide_path: Vec<u16> = OsStr::new(file_path.to_str().unwrap())
         .encode_wide()
@@ -148,14 +152,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
         let mut sid: PSID = ptr::null_mut();
         if ConvertStringSidToSidW(wide_sid.as_ptr(), &mut sid) == 0 {
             if !sd.is_null() {
-                LocalFree(sd as isize);
+                LocalFree(sd);
             }
             return Err("ConvertStringSidToSidW falhou".to_string());
         }
 
         if sid.is_null() {
             if !sd.is_null() {
-                LocalFree(sd as isize);
+                LocalFree(sd);
             }
             return Err("SID conversion returned null".to_string());
         }
@@ -183,19 +187,19 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
                 DACL_SECURITY_INFORMATION,
                 ptr::null_mut(),
                 ptr::null_mut(),
-                new_acl,
+                new_acl as *const ACL,
                 ptr::null_mut(),
             );
 
             if !new_acl.is_null() {
-                LocalFree(new_acl as isize);
+                LocalFree(new_acl as *mut std::ffi::c_void);
             }
         }
 
         if !sd.is_null() {
-            LocalFree(sd as isize);
+            LocalFree(sd);
         }
-        LocalFree(sid as isize);
+        LocalFree(sid as *mut std::ffi::c_void);
     }
 
     Ok(())
