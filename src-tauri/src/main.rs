@@ -2,9 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
-use sysinfo::{ProcessExt, System, SystemExt};
+use sysinfo::System;
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::oneshot;
+use tokio::time::sleep;
 
 use dll_syringe::{process::OwnedProcess, Syringe};
 
@@ -90,18 +91,14 @@ fn find_process_by_name(target: &str) -> Result<OwnedProcess, String> {
         .map_err(|err| format!("Falha ao abrir processo: {err}"))
 }
 
-fn inject_into_process(process: OwnedProcess, dll_path: &PathBuf, method: InjectionMethod) -> Result<(), String> {
+fn inject_into_process(process: OwnedProcess, dll_path: &PathBuf, _method: InjectionMethod) -> Result<(), String> {
     let syringe = Syringe::for_process(process);
-    match method {
-        InjectionMethod::Standard => syringe
-            .inject(dll_path)
-            .map(|_| ())
-            .map_err(|err| format!("Erro ao injetar DLL: {err}")),
-        InjectionMethod::ManualMap => syringe
-            .inject_manual_map(dll_path)
-            .map(|_| ())
-            .map_err(|err| format!("Erro ao injetar DLL (Manual Map): {err}")),
-    }
+    // Note: ManualMap method is not available in dll-syringe 0.17+
+    // Using standard injection for all methods
+    syringe
+        .inject(dll_path)
+        .map(|_| ())
+        .map_err(|err| format!("Erro ao injetar DLL: {err}"))
 }
 
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -196,31 +193,31 @@ fn start_watcher(
         let mut system = System::new_all();
         loop {
             if stop_rx.try_recv().is_ok() {
-                let _ = app_handle.emit_all("watcher-status", "Watcher parado.");
+                let _ = app_handle.emit("watcher-status", "Watcher parado.");
                 break;
             }
 
             system.refresh_processes();
             if let Some(process) = system.processes_by_name(&target).next() {
-                let _ = app_handle.emit_all("watcher-status", "Processo encontrado. Injetando...");
+                let _ = app_handle.emit("watcher-status", "Processo encontrado. Injetando...");
 
                 match OwnedProcess::from_pid(process.pid().as_u32())
                     .map_err(|err| format!("Falha ao abrir processo: {err}"))
                     .and_then(|proc| inject_into_process(proc, &dll_path, method))
                 {
                     Ok(_) => {
-                        let _ = app_handle.emit_all("watcher-status", "Injected!");
+                        let _ = app_handle.emit("watcher-status", "Injected!");
                         break;
                     }
                     Err(err) => {
-                        let _ = app_handle.emit_all("watcher-status", err);
+                        let _ = app_handle.emit("watcher-status", err);
                     }
                 }
             } else {
-                let _ = app_handle.emit_all("watcher-status", "Waiting for process...");
+                let _ = app_handle.emit("watcher-status", "Waiting for process...");
             }
 
-            tauri::async_runtime::sleep(Duration::from_secs(2)).await;
+            sleep(Duration::from_secs(2)).await;
         }
     });
 
