@@ -19,7 +19,7 @@ if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
   rm "${LOCKFILE}"
 fi
 
-cargo +nightly-2024-06-01 build -Znext-lockfile-bump --manifest-path "${TAURI_DIR}/Cargo.toml" --release
+cargo +nightly-2026-01-14 build -Znext-lockfile-bump --manifest-path "${TAURI_DIR}/Cargo.toml" --release
 
 EXE_PATH="$(find "${TAURI_DIR}/target/release" -maxdepth 1 -name '*.exe' -print -quit || true)"
 if [[ -z "${EXE_PATH}" ]]; then
