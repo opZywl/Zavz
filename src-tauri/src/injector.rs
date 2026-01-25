@@ -80,7 +80,7 @@ fn is_pe_64bit(path: &Path) -> Result<bool, String> {
 /// Check if a process is 64-bit
 #[cfg(target_os = "windows")]
 fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
-    use std::os::windows::io::AsRawHandle;
+    use std::os::windows::io::{AsHandle, AsRawHandle};
 
     let handle = process.as_handle().as_raw_handle() as *mut _;
     let mut is_wow64 = FALSE;
@@ -108,16 +108,19 @@ fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
 pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), String> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
-    use windows_sys::Win32::Foundation::{ERROR_SUCCESS, GENERIC_READ, GENERIC_EXECUTE};
+    use windows_sys::Win32::Foundation::{ERROR_SUCCESS, GENERIC_READ, GENERIC_EXECUTE, LocalFree};
     use windows_sys::Win32::Security::{
-        ACL, PSID, DACL_SECURITY_INFORMATION, SE_FILE_OBJECT,
+        ACL, PSID, DACL_SECURITY_INFORMATION,
     };
     use windows_sys::Win32::Security::Authorization::{
         ConvertStringSidToSidW, GetNamedSecurityInfoW, SetNamedSecurityInfoW,
         SetEntriesInAclW, EXPLICIT_ACCESS_W, TRUSTEE_W, SET_ACCESS,
-        SUB_CONTAINERS_AND_OBJECTS_INHERIT, TRUSTEE_IS_SID, TRUSTEE_IS_WELL_KNOWN_GROUP,
+        TRUSTEE_IS_SID, TRUSTEE_IS_WELL_KNOWN_GROUP,
     };
-    use windows_sys::Win32::System::Memory::LocalFree;
+
+    // Windows SDK constants
+    const SE_FILE_OBJECT: u32 = 1;
+    const SUB_CONTAINERS_AND_OBJECTS_INHERIT: u32 = 0x03;
 
     let wide_path: Vec<u16> = OsStr::new(file_path.to_str().unwrap())
         .encode_wide()
@@ -152,14 +155,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
         let mut sid: PSID = ptr::null_mut();
         if ConvertStringSidToSidW(wide_sid.as_ptr(), &mut sid) == 0 {
             if !sd.is_null() {
-                LocalFree(sd);
+                LocalFree(sd as isize);
             }
             return Err("ConvertStringSidToSidW falhou".to_string());
         }
 
         if sid.is_null() {
             if !sd.is_null() {
-                LocalFree(sd);
+                LocalFree(sd as isize);
             }
             return Err("SID conversion returned null".to_string());
         }
@@ -192,14 +195,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
             );
 
             if !new_acl.is_null() {
-                LocalFree(new_acl as *mut std::ffi::c_void);
+                LocalFree(new_acl as isize);
             }
         }
 
         if !sd.is_null() {
-            LocalFree(sd);
+            LocalFree(sd as isize);
         }
-        LocalFree(sid as *mut std::ffi::c_void);
+        LocalFree(sid as isize);
     }
 
     Ok(())
