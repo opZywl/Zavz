@@ -13,7 +13,13 @@ fi
 mkdir -p "${DIST_DIR}"
 
 echo "==> Building Tauri (release)"
-cargo +nightly-2023-11-01 build --manifest-path "${TAURI_DIR}/Cargo.toml" --release
+LOCKFILE="${TAURI_DIR}/Cargo.lock"
+if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
+  echo "Detectado Cargo.lock v4. Removendo para gerar com a toolchain fixada."
+  rm "${LOCKFILE}"
+fi
+
+cargo +nightly-2023-11-01 build -Znext-lockfile-bump --manifest-path "${TAURI_DIR}/Cargo.toml" --release
 
 EXE_PATH="$(find "${TAURI_DIR}/target/release" -maxdepth 1 -name '*.exe' -print -quit || true)"
 if [[ -z "${EXE_PATH}" ]]; then
