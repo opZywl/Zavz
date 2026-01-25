@@ -12,12 +12,33 @@ fi
 
 mkdir -p "${DIST_DIR}"
 
+echo "==> Limpando cache do Cargo e artifacts antigos"
+# Limpar cache do cargo registry (forçar re-download das dependências)
+if [[ -d "${HOME}/.cargo/registry/cache" ]]; then
+  echo "Removendo ${HOME}/.cargo/registry/cache"
+  rm -rf "${HOME}/.cargo/registry/cache"
+fi
+if [[ -d "${HOME}/.cargo/registry/src" ]]; then
+  echo "Removendo ${HOME}/.cargo/registry/src"
+  rm -rf "${HOME}/.cargo/registry/src"
+fi
+
+# Limpar target do projeto
+if [[ -d "${TAURI_DIR}/target" ]]; then
+  echo "Removendo ${TAURI_DIR}/target"
+  rm -rf "${TAURI_DIR}/target"
+fi
+
 echo "==> Building Tauri (release)"
 LOCKFILE="${TAURI_DIR}/Cargo.lock"
 if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
   echo "Detectado Cargo.lock v4. Removendo para gerar com a toolchain fixada."
   rm "${LOCKFILE}"
 fi
+
+# Forçar atualização das dependências
+echo "Atualizando dependências..."
+cargo +nightly-2026-01-14 update --manifest-path "${TAURI_DIR}/Cargo.toml"
 
 cargo +nightly-2026-01-14 build -Znext-lockfile-bump --manifest-path "${TAURI_DIR}/Cargo.toml" --release
 
