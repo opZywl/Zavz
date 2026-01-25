@@ -1,10 +1,10 @@
 {
   "productName": "YZY Injector",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "identifier": "com.yzy.injector",
   "build": {
-    "beforeBuildCommand": "",
-    "beforeDevCommand": "",
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../dist"
   },
@@ -12,20 +12,34 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "YZY Injector",
+        "title": "YZY Injector v2",
         "label": "main",
-        "width": 800,
-        "height": 600,
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1200,
+        "minHeight": 800,
         "resizable": true,
         "fullscreen": false,
-        "center": true
+        "center": true,
+        "decorations": true,
+        "transparent": false
       }
-    ]
+    ],
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "category": "Utility",
-    "icon": [],
-    "targets": "all"
+    "icon": [
+      "icons/icon.png"
+    ],
+    "targets": "all",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    }
   }
 }

@@ -1,13 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod injector;
+
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
 use sysinfo::System;
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::oneshot;
 use tokio::time::sleep;
-
-use dll_syringe::{process::OwnedProcess, Syringe};
 
 #[derive(Debug, Serialize)]
 struct ProcessInfo {
@@ -69,6 +69,12 @@ struct WatcherRequest {
     method: InjectionMethod,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FdpJarRequest {
+    jar_path: String,
+}
+
 struct WatcherHandle {
     stop: oneshot::Sender<()>,
 }
@@ -78,28 +84,6 @@ struct WatcherState {
     handle: Mutex<Option<WatcherHandle>>,
 }
 
-fn find_process_by_name(target: &str) -> Result<OwnedProcess, String> {
-    let mut system = System::new_all();
-    system.refresh_processes();
-
-    let process = system
-        .processes_by_name(target)
-        .next()
-        .ok_or_else(|| format!("Processo '{target}' não encontrado."))?;
-
-    OwnedProcess::from_pid(process.pid().as_u32())
-        .map_err(|err| format!("Falha ao abrir processo: {err}"))
-}
-
-fn inject_into_process(process: OwnedProcess, dll_path: &PathBuf, _method: InjectionMethod) -> Result<(), String> {
-    let syringe = Syringe::for_process(process);
-    // Note: ManualMap method is not available in dll-syringe 0.17+
-    // Using standard injection for all methods
-    syringe
-        .inject(dll_path)
-        .map(|_| ())
-        .map_err(|err| format!("Erro ao injetar DLL: {err}"))
-}
 
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let config_dir = app
@@ -158,10 +142,19 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
         return Err("Arquivo DLL não encontrado no caminho informado.".to_string());
     }
 
-    let process = find_process_by_name(&request.target)?;
-    inject_into_process(process, &dll_path, request.method)?;
+    let process = injector::find_process_by_name(&request.target)?;
 
-    Ok("DLL injetada com sucesso.".to_string())
+    let use_manual_map = matches!(request.method, InjectionMethod::ManualMap);
+    if use_manual_map {
+        return Err("Manual Map ainda não está implementado. Usando Standard LoadLibrary.".to_string());
+    }
+
+    injector::inject_dll(process, &dll_path, use_manual_map)?;
+
+    Ok(format!(
+        "DLL injetada com sucesso em '{}'!",
+        request.target
+    ))
 }
 
 #[tauri::command]
@@ -191,6 +184,8 @@ fn start_watcher(
 
     tauri::async_runtime::spawn(async move {
         let mut system = System::new_all();
+        let mut last_pid: Option<u32> = None;
+
         loop {
             if stop_rx.try_recv().is_ok() {
                 let _ = app_handle.emit("watcher-status", "Watcher parado.");
@@ -199,22 +194,31 @@ fn start_watcher(
 
             system.refresh_processes();
             if let Some(process) = system.processes_by_name(&target).next() {
-                let _ = app_handle.emit("watcher-status", "Processo encontrado. Injetando...");
+                let current_pid = process.pid().as_u32();
 
-                match OwnedProcess::from_pid(process.pid().as_u32())
-                    .map_err(|err| format!("Falha ao abrir processo: {err}"))
-                    .and_then(|proc| inject_into_process(proc, &dll_path, method))
-                {
-                    Ok(_) => {
-                        let _ = app_handle.emit("watcher-status", "Injected!");
-                        break;
-                    }
-                    Err(err) => {
-                        let _ = app_handle.emit("watcher-status", err);
+                // Only inject if it's a new process instance
+                if last_pid != Some(current_pid) {
+                    let _ = app_handle.emit("watcher-status", "Processo encontrado. Injetando...");
+
+                    match injector::find_process_by_name(&target)
+                        .and_then(|proc| {
+                            let use_manual_map = matches!(method, InjectionMethod::ManualMap);
+                            injector::inject_dll(proc, &dll_path, use_manual_map)
+                        })
+                    {
+                        Ok(_) => {
+                            let _ = app_handle.emit("watcher-status", format!("DLL injetada com sucesso em '{}'!", target));
+                            last_pid = Some(current_pid);
+                            // Don't break - continue watching for new instances
+                        }
+                        Err(err) => {
+                            let _ = app_handle.emit("watcher-status", format!("Erro: {}", err));
+                        }
                     }
                 }
             } else {
-                let _ = app_handle.emit("watcher-status", "Waiting for process...");
+                let _ = app_handle.emit("watcher-status", format!("Aguardando {}...", target));
+                last_pid = None;
             }
 
             sleep(Duration::from_secs(2)).await;
@@ -241,6 +245,22 @@ fn stop_watcher(state: State<'_, WatcherState>) -> Result<String, String> {
     Err("Watcher não está ativo.".to_string())
 }
 
+#[tauri::command]
+fn setup_fdp_jar(request: FdpJarRequest) -> Result<String, String> {
+    let jar_path = PathBuf::from(request.jar_path);
+
+    if !jar_path.exists() || !jar_path.is_file() {
+        return Err("Arquivo JAR não encontrado.".to_string());
+    }
+
+    let dest_path = injector::setup_fdp_jar(&jar_path)?;
+
+    Ok(format!(
+        "JAR copiado para: {}",
+        dest_path.display()
+    ))
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(WatcherState::default())
@@ -250,8 +270,9 @@ fn main() {
             list_processes,
             inject_dll,
             start_watcher,
-            stop_watcher
+            stop_watcher,
+            setup_fdp_jar,
         ])
         .run(tauri::generate_context!())
-        .expect("erro ao executar aplicação Tauri");
+        .expect("Erro ao executar aplicação Tauri");
 }
