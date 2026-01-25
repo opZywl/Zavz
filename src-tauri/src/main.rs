@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, sync::Mutex, time::Duration};
+use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
 use sysinfo::{ProcessExt, System, SystemExt};
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::oneshot;
@@ -14,14 +14,46 @@ struct ProcessInfo {
     name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 enum InjectionMethod {
     Standard,
     ManualMap,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "snake_case")]
+enum FdpWrapper {
+    Lunar,
+    Badlion,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct InjectorSettings {
+    jvm_args: String,
+    injection_method: InjectionMethod,
+    auto_close: bool,
+    random_window_title: bool,
+    fdp_jar_path: String,
+    fdp_wrapper: FdpWrapper,
+}
+
+impl Default for InjectorSettings {
+    fn default() -> Self {
+        Self {
+            jvm_args: String::new(),
+            injection_method: InjectionMethod::Standard,
+            auto_close: false,
+            random_window_title: false,
+            fdp_jar_path: "fdpclient/release.jar".to_string(),
+            fdp_wrapper: FdpWrapper::Lunar,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct InjectRequest {
     target: String,
     dll_path: String,
@@ -29,6 +61,7 @@ struct InjectRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct WatcherRequest {
     target: String,
     dll_path: String,
@@ -71,6 +104,24 @@ fn inject_into_process(process: OwnedProcess, dll_path: &PathBuf, method: Inject
     }
 }
 
+fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|err| format!("Falha ao obter pasta de config: {err}"))?;
+    fs::create_dir_all(&config_dir)
+        .map_err(|err| format!("Falha ao criar pasta de config: {err}"))?;
+    Ok(config_dir.join("yzy_injector_settings.json"))
+}
+
+fn load_settings(path: &PathBuf) -> Result<InjectorSettings, String> {
+    if !path.exists() {
+        return Ok(InjectorSettings::default());
+    }
+    let data = fs::read_to_string(path).map_err(|err| format!("Falha ao ler config: {err}"))?;
+    serde_json::from_str(&data).map_err(|err| format!("Config inválida: {err}"))
+}
+
 #[tauri::command]
 fn list_processes() -> Result<Vec<ProcessInfo>, String> {
     let mut system = System::new_all();
@@ -89,9 +140,24 @@ fn list_processes() -> Result<Vec<ProcessInfo>, String> {
 }
 
 #[tauri::command]
+fn get_settings(app: AppHandle) -> Result<InjectorSettings, String> {
+    let path = settings_path(&app)?;
+    load_settings(&path)
+}
+
+#[tauri::command]
+fn save_settings(app: AppHandle, settings: InjectorSettings) -> Result<String, String> {
+    let path = settings_path(&app)?;
+    let data =
+        serde_json::to_string_pretty(&settings).map_err(|err| format!("Falha ao serializar: {err}"))?;
+    fs::write(&path, data).map_err(|err| format!("Falha ao salvar config: {err}"))?;
+    Ok("Configurações salvas.".to_string())
+}
+
+#[tauri::command]
 fn inject_dll(request: InjectRequest) -> Result<String, String> {
     let dll_path = PathBuf::from(request.dll_path);
-    if !dll_path.exists() {
+    if !dll_path.exists() || !dll_path.is_file() {
         return Err("Arquivo DLL não encontrado no caminho informado.".to_string());
     }
 
@@ -182,6 +248,8 @@ fn main() {
     tauri::Builder::default()
         .manage(WatcherState::default())
         .invoke_handler(tauri::generate_handler![
+            get_settings,
+            save_settings,
             list_processes,
             inject_dll,
             start_watcher,
