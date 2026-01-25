@@ -11,6 +11,9 @@ dll-syringe = { version = "0.17", default-features = false, features = ["syringe
 tokio = { version = "1.37", features = ["sync", "time"] }
 tauri = { version = "2.3", features = [] }
 
+[build-dependencies]
+tauri-build = { version = "2.3", features = [] }
+
 [profile.release]
 opt-level = "z"
 strip = true
