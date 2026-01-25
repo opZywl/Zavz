@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Bolt,
   ChevronDown,
@@ -7,12 +7,48 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const SettingsCard = () => {
+type InjectionMethod = "standard" | "manual_map";
+type FdpWrapper = "lunar" | "badlion";
+
+interface InjectorSettings {
+  jvmArgs: string;
+  injectionMethod: InjectionMethod;
+  autoClose: boolean;
+  randomWindowTitle: boolean;
+  fdpJarPath: string;
+  fdpWrapper: FdpWrapper;
+}
+
+interface SettingsCardProps {
+  settings: InjectorSettings;
+  onSettingsChange: (value: InjectorSettings) => void;
+  onSave: () => void;
+  saveMessage: string | null;
+}
+
+const SettingsCard = ({
+  settings,
+  onSettingsChange,
+  onSave,
+  saveMessage,
+}: SettingsCardProps) => {
   const [expanded, setExpanded] = useState(true);
-  const [wrapper, setWrapper] = useState("lunar");
+  const jarInputRef = useRef<HTMLInputElement>(null);
+
+  const updateSettings = (partial: Partial<InjectorSettings>) => {
+    onSettingsChange({ ...settings, ...partial });
+  };
+
+  const handleJarSelect = (file?: File | null) => {
+    if (!file) {
+      return;
+    }
+    const path = (file as File & { path?: string }).path ?? file.name;
+    updateSettings({ fdpJarPath: path });
+  };
 
   return (
-    <div className="flex h-full flex-col gap-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+    <div className="flex h-full flex-col gap-5 rounded-[18px] border border-zinc-800 bg-zinc-900/80 p-6">
       <button
         className="flex items-center justify-between text-left"
         onClick={() => setExpanded((prev) => !prev)}
@@ -33,31 +69,45 @@ const SettingsCard = () => {
 
       {expanded && (
         <div className="flex flex-col gap-5">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+          <div className="rounded-2xl border border-zinc-800 bg-black/30 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <SlidersHorizontal className="h-4 w-4 text-blue-400" />
+              <SlidersHorizontal className="h-4 w-4 text-[#4677FF]" />
               JVM Arguments
             </div>
             <input
               className="mt-3 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 outline-none"
               placeholder="-Xmx4G -XX:+UseG1GC"
+              value={settings.jvmArgs}
+              onChange={(event) =>
+                updateSettings({ jvmArgs: event.target.value })
+              }
             />
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+          <div className="rounded-2xl border border-zinc-800 bg-black/30 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <Bolt className="h-4 w-4 text-blue-400" />
+              <Bolt className="h-4 w-4 text-[#4677FF]" />
               Injection Method
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <button
-                className="rounded-xl border border-blue-500/40 bg-blue-500/20 px-3 py-2 text-blue-200"
+                className={`rounded-xl border px-3 py-2 ${
+                  settings.injectionMethod === "standard"
+                    ? "border-[#4677FF]/40 bg-[#4677FF]/20 text-[#4677FF]"
+                    : "border-zinc-800 bg-zinc-900 text-zinc-400"
+                }`}
+                onClick={() => updateSettings({ injectionMethod: "standard" })}
                 type="button"
               >
                 Standard
               </button>
               <button
-                className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-400"
+                className={`rounded-xl border px-3 py-2 ${
+                  settings.injectionMethod === "manual_map"
+                    ? "border-[#4677FF]/40 bg-[#4677FF]/20 text-[#4677FF]"
+                    : "border-zinc-800 bg-zinc-900 text-zinc-400"
+                }`}
+                onClick={() => updateSettings({ injectionMethod: "manual_map" })}
                 type="button"
               >
                 Manual Map
@@ -65,20 +115,34 @@ const SettingsCard = () => {
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4 text-xs text-zinc-400">
+          <div className="grid gap-3 rounded-2xl border border-zinc-800 bg-black/30 p-4 text-xs text-zinc-400">
             <label className="flex items-center justify-between">
               Auto-close after inject
-              <input className="h-4 w-4" type="checkbox" />
+              <input
+                className="h-4 w-4"
+                checked={settings.autoClose}
+                onChange={(event) =>
+                  updateSettings({ autoClose: event.target.checked })
+                }
+                type="checkbox"
+              />
             </label>
             <label className="flex items-center justify-between">
               Random window title
-              <input className="h-4 w-4" type="checkbox" />
+              <input
+                className="h-4 w-4"
+                checked={settings.randomWindowTitle}
+                onChange={(event) =>
+                  updateSettings({ randomWindowTitle: event.target.checked })
+                }
+                type="checkbox"
+              />
             </label>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+          <div className="rounded-2xl border border-zinc-800 bg-black/30 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <Sparkles className="h-4 w-4 text-blue-400" />
+              <Sparkles className="h-4 w-4 text-[#4677FF]" />
               FDP Client Loader
             </div>
             <p className="mt-2 text-xs text-zinc-500">
@@ -86,35 +150,43 @@ const SettingsCard = () => {
             </p>
             <button
               className="mt-3 flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm"
+              onClick={() => jarInputRef.current?.click()}
               type="button"
             >
               <span className="truncate text-zinc-300">
-                fdpclient/release.jar
+                {settings.fdpJarPath || "fdpclient/release.jar"}
               </span>
-              <FileArchive className="h-4 w-4 text-blue-400" />
+              <FileArchive className="h-4 w-4 text-[#4677FF]" />
             </button>
+            <input
+              ref={jarInputRef}
+              accept=".jar"
+              className="hidden"
+              onChange={(event) => handleJarSelect(event.target.files?.[0])}
+              type="file"
+            />
 
             <div className="mt-4 flex flex-col gap-2 text-xs text-zinc-400">
               <p>Wrapper</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   className={`rounded-xl border px-3 py-2 ${
-                    wrapper === "lunar"
-                      ? "border-blue-500/40 bg-blue-500/20 text-blue-200"
+                    settings.fdpWrapper === "lunar"
+                      ? "border-[#4677FF]/40 bg-[#4677FF]/20 text-[#4677FF]"
                       : "border-zinc-800 bg-zinc-900"
                   }`}
-                  onClick={() => setWrapper("lunar")}
+                  onClick={() => updateSettings({ fdpWrapper: "lunar" })}
                   type="button"
                 >
                   Lunar Client
                 </button>
                 <button
                   className={`rounded-xl border px-3 py-2 ${
-                    wrapper === "badlion"
-                      ? "border-blue-500/40 bg-blue-500/20 text-blue-200"
+                    settings.fdpWrapper === "badlion"
+                      ? "border-[#4677FF]/40 bg-[#4677FF]/20 text-[#4677FF]"
                       : "border-zinc-800 bg-zinc-900"
                   }`}
-                  onClick={() => setWrapper("badlion")}
+                  onClick={() => updateSettings({ fdpWrapper: "badlion" })}
                   type="button"
                 >
                   Badlion Client
@@ -125,17 +197,22 @@ const SettingsCard = () => {
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <button
                 className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-300"
+                onClick={() => jarInputRef.current?.click()}
                 type="button"
               >
                 Change Path
               </button>
               <button
-                className="rounded-xl border border-blue-500/40 bg-blue-500/20 px-3 py-2 text-blue-200"
+                className="rounded-xl border border-[#4677FF]/40 bg-[#4677FF]/20 px-3 py-2 text-[#4677FF]"
+                onClick={onSave}
                 type="button"
               >
                 Save Config
               </button>
             </div>
+            {saveMessage && (
+              <p className="mt-3 text-xs text-zinc-400">{saveMessage}</p>
+            )}
           </div>
         </div>
       )}
