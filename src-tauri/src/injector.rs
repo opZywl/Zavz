@@ -119,7 +119,7 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
     };
 
     // Windows SDK constants
-    const SE_FILE_OBJECT: u32 = 1;
+    const SE_FILE_OBJECT: i32 = 1;
     const SUB_CONTAINERS_AND_OBJECTS_INHERIT: u32 = 0x03;
 
     let wide_path: Vec<u16> = OsStr::new(file_path.to_str().unwrap())
@@ -155,14 +155,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
         let mut sid: PSID = ptr::null_mut();
         if ConvertStringSidToSidW(wide_sid.as_ptr(), &mut sid) == 0 {
             if !sd.is_null() {
-                LocalFree(sd as isize);
+                LocalFree(sd);
             }
             return Err("ConvertStringSidToSidW falhou".to_string());
         }
 
         if sid.is_null() {
             if !sd.is_null() {
-                LocalFree(sd as isize);
+                LocalFree(sd);
             }
             return Err("SID conversion returned null".to_string());
         }
@@ -195,14 +195,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
             );
 
             if !new_acl.is_null() {
-                LocalFree(new_acl as isize);
+                LocalFree(new_acl as *mut std::ffi::c_void);
             }
         }
 
         if !sd.is_null() {
-            LocalFree(sd as isize);
+            LocalFree(sd);
         }
-        LocalFree(sid as isize);
+        LocalFree(sid as *mut std::ffi::c_void);
     }
 
     Ok(())
