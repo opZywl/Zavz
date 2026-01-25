@@ -1,0 +1,18 @@
+[package]
+name = "yzy-injector"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sysinfo = "0.30"
+dll-syringe = { version = "0.15.2", default-features = false, features = ["syringe"] }
+tokio = { version = "1.37", features = ["sync", "time"] }
+tauri = { version = "2.3", features = [] }
+
+[profile.release]
+opt-level = "z"
+strip = true
+lto = true
+codegen-units = 1
