@@ -27,11 +27,29 @@ if [[ "${CLEAN:-0}" == "1" ]]; then
     echo "Removendo ${TAURI_DIR}/target"
     rm -rf "${TAURI_DIR}/target"
   fi
+  if [[ -d "${DIST_DIR}" ]]; then
+    echo "Removendo ${DIST_DIR}"
+    rm -rf "${DIST_DIR}"
+  fi
+  if [[ -d "node_modules" ]]; then
+    echo "Removendo node_modules"
+    rm -rf node_modules
+  fi
 else
   echo "==> Build incremental (use CLEAN=1 para limpeza completa)"
 fi
 
-echo "==> Building Tauri (release)"
+# Instalar dependências do Node.js se necessário
+if [[ ! -d "node_modules" ]]; then
+  echo "==> Instalando dependências do Node.js"
+  npm install
+fi
+
+# Build do frontend React + Vite
+echo "==> Building frontend (React + Vite)"
+npm run build
+
+echo "==> Building Tauri backend (Rust)"
 LOCKFILE="${TAURI_DIR}/Cargo.lock"
 if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
   echo "Detectado Cargo.lock v4. Removendo para gerar com a toolchain fixada."
