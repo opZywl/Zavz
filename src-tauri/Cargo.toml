@@ -13,7 +13,8 @@ tauri = { version = "2.3", features = [] }
 dirs = "5.0"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winnt", "aclapi", "accctrl", "sddlapi", "errhandlingapi", "wow64apiset", "minwindef", "handleapi"] }
+winapi = { version = "0.3", features = ["winnt", "errhandlingapi", "wow64apiset", "minwindef", "handleapi", "fileapi", "securitybaseapi", "winbase"] }
+windows-sys = { version = "0.59", features = ["Win32_Security", "Win32_Storage_FileSystem", "Win32_Foundation"] }
 
 [build-dependencies]
 tauri-build = { version = "2.3", features = [] }

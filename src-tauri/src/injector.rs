@@ -6,14 +6,8 @@ use sysinfo::System;
 #[cfg(target_os = "windows")]
 use {
     std::ptr,
-    winapi::um::{
-        winnt::{PSID, ACL},
-        aclapi::{GetNamedSecurityInfoW, SetNamedSecurityInfoW, SetEntriesInAclW},
-        accctrl::EXPLICIT_ACCESS_W,
-        winnt::{GENERIC_READ, GENERIC_EXECUTE, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION},
-        sddlapi::ConvertStringSidToSidW,
-        errhandlingapi::GetLastError,
-    },
+    winapi::um::wow64apiset::IsWow64Process,
+    winapi::shared::minwindef::FALSE,
 };
 
 /// Validates DLL architecture against target process
@@ -86,9 +80,6 @@ fn is_pe_64bit(path: &Path) -> Result<bool, String> {
 /// Check if a process is 64-bit
 #[cfg(target_os = "windows")]
 fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
-    use winapi::um::wow64apiset::IsWow64Process;
-    use winapi::shared::minwindef::FALSE;
-
     let handle = process.handle().as_raw_handle() as *mut _;
     let mut is_wow64 = FALSE;
 
@@ -115,6 +106,14 @@ fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
 pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), String> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::{ERROR_SUCCESS, GENERIC_READ, GENERIC_EXECUTE};
+    use windows_sys::Win32::Security::{
+        ConvertStringSidToSidW, GetNamedSecurityInfoW, SetNamedSecurityInfoW,
+        SetEntriesInAclW, DACL_SECURITY_INFORMATION, SE_FILE_OBJECT,
+        ACL, PSID, EXPLICIT_ACCESS_W, TRUSTEE_W, SET_ACCESS,
+        SUB_CONTAINERS_AND_OBJECTS_INHERIT, TRUSTEE_IS_SID, TRUSTEE_IS_WELL_KNOWN_GROUP,
+    };
+    use windows_sys::Win32::Foundation::LocalFree;
 
     let wide_path: Vec<u16> = OsStr::new(file_path.to_str().unwrap())
         .encode_wide()
@@ -127,7 +126,7 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
         .collect();
 
     unsafe {
-        let mut sd: *mut _ = ptr::null_mut();
+        let mut sd: *mut std::ffi::c_void = ptr::null_mut();
         let mut current_acl: *mut ACL = ptr::null_mut();
 
         // Get current security info
@@ -142,33 +141,44 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
             &mut sd,
         );
 
-        if result != 0 {
+        if result != ERROR_SUCCESS {
             return Err(format!("GetNamedSecurityInfoW falhou: {}", result));
         }
 
         let mut sid: PSID = ptr::null_mut();
         if ConvertStringSidToSidW(wide_sid.as_ptr(), &mut sid) == 0 {
-            return Err(format!("ConvertStringSidToSidW falhou: {}", GetLastError()));
+            if !sd.is_null() {
+                LocalFree(sd as isize);
+            }
+            return Err("ConvertStringSidToSidW falhou".to_string());
         }
 
         if sid.is_null() {
+            if !sd.is_null() {
+                LocalFree(sd as isize);
+            }
             return Err("SID conversion returned null".to_string());
         }
 
-        let mut ea: EXPLICIT_ACCESS_W = std::mem::zeroed();
-        ea.grfAccessPermissions = GENERIC_READ | GENERIC_EXECUTE;
-        ea.grfAccessMode = 3; // SET_ACCESS
-        ea.grfInheritance = 0x03; // SUB_CONTAINERS_AND_OBJECTS_INHERIT
-        ea.Trustee.TrusteeForm = 0; // TRUSTEE_IS_SID
-        ea.Trustee.TrusteeType = 5; // TRUSTEE_IS_WELL_KNOWN_GROUP
-        ea.Trustee.ptstrName = sid as *mut u16;
+        let mut ea = EXPLICIT_ACCESS_W {
+            grfAccessPermissions: GENERIC_READ | GENERIC_EXECUTE,
+            grfAccessMode: SET_ACCESS,
+            grfInheritance: SUB_CONTAINERS_AND_OBJECTS_INHERIT,
+            Trustee: TRUSTEE_W {
+                pMultipleTrustee: ptr::null_mut(),
+                MultipleTrusteeOperation: 0,
+                TrusteeForm: TRUSTEE_IS_SID,
+                TrusteeType: TRUSTEE_IS_WELL_KNOWN_GROUP,
+                ptstrName: sid as *mut u16,
+            },
+        };
 
         let mut new_acl: *mut ACL = ptr::null_mut();
         let result = SetEntriesInAclW(1, &mut ea, current_acl, &mut new_acl);
 
-        if result == 0 {
-            SetNamedSecurityInfoW(
-                wide_path.as_ptr() as *mut _,
+        if result == ERROR_SUCCESS {
+            let _ = SetNamedSecurityInfoW(
+                wide_path.as_ptr() as *mut u16,
                 SE_FILE_OBJECT,
                 DACL_SECURITY_INFORMATION,
                 ptr::null_mut(),
@@ -176,7 +186,16 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
                 new_acl,
                 ptr::null_mut(),
             );
+
+            if !new_acl.is_null() {
+                LocalFree(new_acl as isize);
+            }
         }
+
+        if !sd.is_null() {
+            LocalFree(sd as isize);
+        }
+        LocalFree(sid as isize);
     }
 
     Ok(())
