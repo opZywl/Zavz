@@ -41,7 +41,7 @@ const TopBar: React.FC = () => {
             <span className="text-[10px] text-zinc-400 font-mono">admin@yzy.cc</span>
          </div>
 
-         <div className="h-4 w-px bg-[#1F1F2E]"></div>
+         <div className="h-4 w-px bg-[#1F1F2E]" data-tauri-drag-region="false"></div>
 
          <div className="flex items-center gap-1">
             <button
