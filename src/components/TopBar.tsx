@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Shield, Minus, X } from 'lucide-react';
+import { Shield, Minus, Maximize2, X } from 'lucide-react';
 import { Badge } from './ui';
 
 const TopBar: React.FC = () => {
   const appWindow = getCurrentWindow();
 
-  const handleMinimize = () => {
-    appWindow.minimize();
-  };
+  const handleMinimize = useCallback(async () => {
+    await appWindow.minimize();
+  }, [appWindow]);
 
-  const handleClose = () => {
-    appWindow.close();
-  };
+  const handleMaximize = useCallback(async () => {
+    await appWindow.toggleMaximize();
+  }, [appWindow]);
+
+  const handleClose = useCallback(async () => {
+    await appWindow.close();
+  }, [appWindow]);
 
   return (
     <div
@@ -47,6 +51,14 @@ const TopBar: React.FC = () => {
               type="button"
             >
               <Minus size={14} />
+            </button>
+            <button
+              className="p-2 hover:bg-[#1F1F2E] rounded text-zinc-500 hover:text-white transition-colors"
+              onClick={handleMaximize}
+              aria-label="Maximize window"
+              type="button"
+            >
+              <Maximize2 size={14} />
             </button>
             <button
               className="p-2 hover:bg-red-500/10 rounded text-zinc-500 hover:text-red-400 transition-colors"
