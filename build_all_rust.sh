@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TAURI_DIR="${ROOT_DIR}/src-tauri"
 DIST_DIR="${ROOT_DIR}/dist"
+RELEASE_DIR="${ROOT_DIR}/release"
 
 if [[ ! -f "${TAURI_DIR}/Cargo.toml" ]]; then
   echo "Erro: ${TAURI_DIR}/Cargo.toml não encontrado. Configure o projeto Tauri primeiro."
@@ -11,6 +12,7 @@ if [[ ! -f "${TAURI_DIR}/Cargo.toml" ]]; then
 fi
 
 mkdir -p "${DIST_DIR}"
+mkdir -p "${RELEASE_DIR}"
 
 # Opção de limpeza profunda (use: CLEAN=1 ./build_all_rust.sh)
 if [[ "${CLEAN:-0}" == "1" ]]; then
@@ -30,6 +32,10 @@ if [[ "${CLEAN:-0}" == "1" ]]; then
   if [[ -d "${DIST_DIR}" ]]; then
     echo "Removendo ${DIST_DIR}"
     rm -rf "${DIST_DIR}"
+  fi
+  if [[ -d "${RELEASE_DIR}" ]]; then
+    echo "Removendo ${RELEASE_DIR}"
+    rm -rf "${RELEASE_DIR}"
   fi
   if [[ -d "node_modules" ]]; then
     echo "Removendo node_modules"
@@ -64,5 +70,8 @@ if [[ -z "${EXE_PATH}" ]]; then
   exit 1
 fi
 
-cp "${EXE_PATH}" "${DIST_DIR}/"
-echo "Build complete. Output: ${DIST_DIR}/$(basename "${EXE_PATH}")"
+cp "${EXE_PATH}" "${RELEASE_DIR}/"
+echo ""
+echo "✅ Build complete!"
+echo "📦 Executável: ${RELEASE_DIR}/$(basename "${EXE_PATH}")"
+echo "🚀 Para rodar: ./${RELEASE_DIR}/$(basename "${EXE_PATH}")"

@@ -16,5 +16,7 @@ export default defineConfig({
     target: ['es2021', 'chrome100', 'safari13'],
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
+    emptyOutDir: true, // Limpa dist/ mas apenas de arquivos web, não .exe
+    outDir: 'dist',
   },
 });
