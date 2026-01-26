@@ -5,7 +5,7 @@ mod injector;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
 use sysinfo::System;
-use tauri::{AppHandle, Manager, State};
+use tauri::{generate_context, AppHandle, Emitter, Manager, State};
 use tokio::sync::oneshot;
 use tokio::time::sleep;
 
@@ -278,6 +278,6 @@ fn main() {
             stop_watcher,
             setup_fdp_jar,
         ])
-        .run(tauri::generate_context!())
+        .run(generate_context!())
         .expect("Erro ao executar aplicação Tauri");
 }
