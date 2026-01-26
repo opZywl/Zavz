@@ -45,6 +45,22 @@ const App = () => {
     status: "",
   });
 
+  const resolveErrorMessage = (error: unknown, fallback: string) => {
+    if (typeof error === "string") {
+      return error;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (error && typeof error === "object" && "message" in error) {
+      return String((error as { message?: string }).message ?? fallback);
+    }
+    return fallback;
+  };
+
+  const isAbsolutePath = (value: string) =>
+    /^[a-zA-Z]:\\/.test(value) || value.startsWith("\\\\") || value.startsWith("/");
+
   const addLog = useCallback((message: string, type: LogEntry['type'] = 'info') => {
     setLogs((prev) => [...prev, { timestamp: new Date(), type, message }]);
   }, []);
@@ -140,6 +156,14 @@ const App = () => {
       return;
     }
 
+    if (!isAbsolutePath(dllPath)) {
+      const msg =
+        "Caminho da DLL inválido. Use o botão 'Procurar DLL' para selecionar o arquivo completo.";
+      setStatus(msg);
+      addLog(msg, 'warning');
+      return;
+    }
+
     setLoading({
       active: true,
       title: "Injetando DLL",
@@ -172,9 +196,7 @@ const App = () => {
         await getCurrentWindow().close();
       }
     } catch (error) {
-      const errorMsg = error instanceof Error
-        ? error.message
-        : "Falha ao injetar DLL.";
+      const errorMsg = resolveErrorMessage(error, "Falha ao injetar DLL.");
       setStatus(errorMsg);
       addLog(errorMsg, 'error');
     } finally {
@@ -199,6 +221,10 @@ const App = () => {
           ? "Finalizando rotina de monitoramento..."
           : "Preparando observador de processo...",
       });
+      const injectionMethod =
+        settings.injectionMethod === "manual_map"
+          ? "standard"
+          : settings.injectionMethod;
       if (watcherEnabled) {
         await invoke("stop_watcher");
         setWatcherEnabled(false);
@@ -209,14 +235,14 @@ const App = () => {
           request: {
             target,
             dllPath,
-            method: settings.injectionMethod,
+            method: injectionMethod,
           },
         });
         setWatcherEnabled(true);
         addLog(`Watcher iniciado - Monitorando ${target}`, 'success');
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Falha ao iniciar watcher.";
+      const errorMsg = resolveErrorMessage(error, "Falha ao iniciar watcher.");
       setStatus(errorMsg);
       addLog(errorMsg, 'error');
     } finally {
@@ -230,7 +256,7 @@ const App = () => {
       setSaveMessage("Configurações salvas com sucesso.");
       addLog('Configurações salvas', 'success');
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Falha ao salvar config.";
+      const errorMsg = resolveErrorMessage(error, "Falha ao salvar config.");
       setSaveMessage(errorMsg);
       addLog(errorMsg, 'error');
     }
