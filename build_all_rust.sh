@@ -69,6 +69,7 @@ if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
 fi
 
 # Configurar toolchain override temporário para este diretório
+echo "→ Configurando Rust nightly-2026-01-14..."
 cd "${TAURI_DIR}"
 rustup override set nightly-2026-01-14
 cd "${ROOT_DIR}"
@@ -78,9 +79,10 @@ cd "${ROOT_DIR}"
 # 2. Embarca assets de dist/ no executável
 # 3. Compila o backend Rust
 echo "→ Rodando Tauri CLI (isso vai compilar frontend + backend)..."
-npm run tauri build -- -Znext-lockfile-bump
+npm run tauri build
 
 # Remover override
+echo "→ Limpando toolchain override..."
 cd "${TAURI_DIR}"
 rustup override unset
 cd "${ROOT_DIR}"
