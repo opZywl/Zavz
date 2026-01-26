@@ -61,27 +61,43 @@ if [[ -d "${DIST_DIR}" ]]; then
 fi
 mkdir -p "${DIST_DIR}"
 
-# Build do frontend React + Vite
-echo "==> Building frontend (React + Vite)"
-npm run build
-
-echo "==> Building Tauri backend (Rust)"
+echo "==> Building Tauri app (integrado: frontend + backend)"
 LOCKFILE="${TAURI_DIR}/Cargo.lock"
 if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
   echo "Detectado Cargo.lock v4. Removendo para gerar com a toolchain fixada."
   rm "${LOCKFILE}"
 fi
 
-cargo +nightly-2026-01-14 build -Znext-lockfile-bump --manifest-path "${TAURI_DIR}/Cargo.toml" --release
+# Configurar toolchain override temporário para este diretório
+cd "${TAURI_DIR}"
+rustup override set nightly-2026-01-14
+cd "${ROOT_DIR}"
 
+# Usar Tauri CLI que automaticamente:
+# 1. Roda beforeBuildCommand (npm run build)
+# 2. Embarca assets de dist/ no executável
+# 3. Compila o backend Rust
+echo "→ Rodando Tauri CLI (isso vai compilar frontend + backend)..."
+npm run tauri build -- -Znext-lockfile-bump
+
+# Remover override
+cd "${TAURI_DIR}"
+rustup override unset
+cd "${ROOT_DIR}"
+
+# Encontrar o executável gerado
 EXE_PATH="$(find "${TAURI_DIR}/target/release" -maxdepth 1 -name '*.exe' -print -quit || true)"
 if [[ -z "${EXE_PATH}" ]]; then
-  echo "Erro: nenhum .exe encontrado em ${TAURI_DIR}/target/release."
+  echo "❌ Erro: nenhum .exe encontrado em ${TAURI_DIR}/target/release."
+  echo "   Verifique os logs de build acima."
   exit 1
 fi
 
+# Copiar para release/
 cp "${EXE_PATH}" "${RELEASE_DIR}/"
 echo ""
 echo "✅ Build complete!"
 echo "📦 Executável: ${RELEASE_DIR}/$(basename "${EXE_PATH}")"
 echo "🚀 Para rodar: ./${RELEASE_DIR}/$(basename "${EXE_PATH}")"
+echo ""
+echo "ℹ️  O executável contém a UI embarcada (não precisa de localhost)"
