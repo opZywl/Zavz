@@ -1,4 +1,5 @@
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
 import {
   FileInput,
   FolderOpen,
@@ -32,8 +33,6 @@ const InjectorCard = ({
   onInject,
   onWatcherToggle,
 }: InjectorCardProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const currentStatus = useMemo(
     () => status || "Waiting for process...",
     [status],
@@ -120,13 +119,6 @@ const InjectorCard = ({
           <p className="mt-3 text-xs text-zinc-500">
             {dllPath || "Nenhuma DLL selecionada."}
           </p>
-          <input
-            ref={inputRef}
-            accept=".dll"
-            className="hidden"
-            onChange={(event) => resolveFilePath(event.target.files?.[0])}
-            type="file"
-          />
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 hover:border-[#4677FF]/40"
             onClick={handleBrowseClick}

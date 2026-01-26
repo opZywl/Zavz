@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   Bolt,
   ChevronDown,
@@ -6,6 +6,7 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
+import { open } from "@tauri-apps/plugin-dialog";
 
 type InjectionMethod = "standard" | "manual_map";
 type FdpWrapper = "lunar" | "badlion";
@@ -38,12 +39,16 @@ const SettingsCard = ({
     onSettingsChange({ ...settings, ...partial });
   };
 
-  const handleJarSelect = (file?: File | null) => {
-    if (!file) {
-      return;
+  const handleJarSelect = async () => {
+    const selected = await open({
+      title: "Selecionar arquivo JAR",
+      multiple: false,
+      filters: [{ name: "JAR", extensions: ["jar"] }],
+    });
+
+    if (typeof selected === "string") {
+      updateSettings({ fdpJarPath: selected });
     }
-    const path = (file as File & { path?: string }).path ?? file.name;
-    updateSettings({ fdpJarPath: path });
   };
 
   const handleJarClick = () => {
@@ -160,13 +165,6 @@ const SettingsCard = ({
               </span>
               <FileArchive className="h-4 w-4 text-[#4677FF]" />
             </button>
-            <input
-              ref={jarInputRef}
-              accept=".jar"
-              className="hidden"
-              onChange={(event) => handleJarSelect(event.target.files?.[0])}
-              type="file"
-            />
 
             <div className="mt-4 flex flex-col gap-2 text-xs text-zinc-400">
               <p>Wrapper</p>
