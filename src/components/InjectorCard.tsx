@@ -47,6 +47,10 @@ const InjectorCard = ({
     onDllPathChange(maybePath ?? file.name);
   };
 
+  const handleBrowseClick = () => {
+    inputRef.current?.click();
+  };
+
   return (
     <div className="flex h-full flex-col gap-5 rounded-[18px] border border-zinc-800 bg-zinc-900/80 p-6">
       <div className="rounded-[16px] bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1f2937] p-5">
@@ -56,7 +60,7 @@ const InjectorCard = ({
               Injector Core
             </p>
             <h2 className="text-2xl font-semibold text-white">
-              YZY Injector Hub
+              Central de Injeção YZY
             </h2>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs text-zinc-200">
@@ -64,12 +68,15 @@ const InjectorCard = ({
             {currentStatus}
           </div>
         </div>
+        <p className="mt-3 text-xs text-zinc-400">
+          Siga o fluxo: selecione a DLL, confirme o alvo e inicie a injeção com um clique.
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-2xl border border-zinc-800 bg-black/30 p-4">
           <label className="text-sm text-zinc-400" htmlFor="target">
-            Target process
+            Processo alvo
           </label>
           <div className="mt-3 flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3">
             <SwitchCamera className="h-5 w-5 text-[#4677FF]" />
@@ -83,7 +90,7 @@ const InjectorCard = ({
             />
           </div>
           <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
-            <span>Custom target</span>
+            <span>Alvo personalizado</span>
             <button
               className={`rounded-full px-3 py-1 transition ${
                 customTarget
@@ -107,7 +114,7 @@ const InjectorCard = ({
           role="presentation"
         >
           <div className="flex items-center justify-between">
-            <p className="text-sm text-zinc-300">Drag & Drop DLL</p>
+            <p className="text-sm text-zinc-300">Arraste e solte a DLL</p>
             <FileInput className="h-5 w-5 text-[#4677FF]" />
           </div>
           <p className="mt-3 text-xs text-zinc-500">
@@ -122,11 +129,11 @@ const InjectorCard = ({
           />
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 hover:border-[#4677FF]/40"
-            onClick={() => inputRef.current?.click()}
+            onClick={handleBrowseClick}
             type="button"
           >
             <FolderOpen className="h-4 w-4" />
-            Browse DLL
+            Procurar DLL
           </button>
         </div>
       </div>
@@ -134,7 +141,7 @@ const InjectorCard = ({
       <div className="grid gap-4 md:grid-cols-[1fr_0.8fr]">
         <div className="rounded-2xl border border-zinc-800 bg-black/30 p-4 text-xs text-zinc-400">
           <div className="flex items-center justify-between">
-            <p>Watcher Mode</p>
+            <p>Modo Watcher</p>
             <button
               className={`rounded-full px-3 py-1 text-xs transition ${
                 watcherEnabled
@@ -163,11 +170,9 @@ const InjectorCard = ({
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-blue-100/70">
-              Ready to inject
+              Pronto para injetar
             </p>
-            <p className="text-lg font-semibold text-white">
-              Target: {target}
-            </p>
+            <p className="text-lg font-semibold text-white">Alvo: {target}</p>
           </div>
           <button
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-950/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-950/40 md:w-auto"
@@ -175,7 +180,7 @@ const InjectorCard = ({
             type="button"
           >
             <Power className="h-5 w-5" />
-            Inject
+            Injetar agora
           </button>
         </div>
       </div>
