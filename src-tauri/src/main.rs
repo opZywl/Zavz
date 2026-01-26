@@ -144,17 +144,18 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
 
     let process = injector::find_process_by_name(&request.target)?;
 
-    let use_manual_map = matches!(request.method, InjectionMethod::ManualMap);
-    if use_manual_map {
-        return Err("Manual Map ainda não está implementado. Usando Standard LoadLibrary.".to_string());
+    let manual_map_requested = matches!(request.method, InjectionMethod::ManualMap);
+    injector::inject_dll(process, &dll_path, false)?;
+
+    let mut response = String::new();
+    if manual_map_requested {
+        response.push_str("Manual Map indisponível. Usando Standard LoadLibrary. ");
     }
-
-    injector::inject_dll(process, &dll_path, use_manual_map)?;
-
-    Ok(format!(
+    response.push_str(&format!(
         "DLL injetada com sucesso em '{}'!",
         request.target
-    ))
+    ));
+    Ok(response)
 }
 
 #[tauri::command]
@@ -200,11 +201,15 @@ fn start_watcher(
                 if last_pid != Some(current_pid) {
                     let _ = app_handle.emit("watcher-status", "Processo encontrado. Injetando...");
 
+                    if matches!(method, InjectionMethod::ManualMap) {
+                        let _ = app_handle.emit(
+                            "watcher-status",
+                            "Manual Map indisponível. Usando Standard LoadLibrary.",
+                        );
+                    }
+
                     match injector::find_process_by_name(&target)
-                        .and_then(|proc| {
-                            let use_manual_map = matches!(method, InjectionMethod::ManualMap);
-                            injector::inject_dll(proc, &dll_path, use_manual_map)
-                        })
+                        .and_then(|proc| injector::inject_dll(proc, &dll_path, false))
                     {
                         Ok(_) => {
                             let _ = app_handle.emit("watcher-status", format!("DLL injetada com sucesso em '{}'!", target));
