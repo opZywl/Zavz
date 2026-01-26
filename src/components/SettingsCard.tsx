@@ -51,6 +51,10 @@ const SettingsCard = ({
     }
   };
 
+  const handleJarClick = () => {
+    jarInputRef.current?.click();
+  };
+
   return (
     <div className="flex h-full flex-col gap-5 rounded-[18px] border border-zinc-800 bg-zinc-900/80 p-6">
       <button
@@ -153,7 +157,7 @@ const SettingsCard = ({
             </p>
             <button
               className="mt-3 flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm"
-              onClick={handleJarSelect}
+              onClick={handleJarClick}
               type="button"
             >
               <span className="truncate text-zinc-300">
@@ -193,7 +197,7 @@ const SettingsCard = ({
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <button
                 className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-zinc-300"
-                onClick={handleJarSelect}
+                onClick={handleJarClick}
                 type="button"
               >
                 Change Path

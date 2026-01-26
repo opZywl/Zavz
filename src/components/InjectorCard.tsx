@@ -46,16 +46,8 @@ const InjectorCard = ({
     onDllPathChange(maybePath ?? file.name);
   };
 
-  const handleBrowse = async () => {
-    const selected = await open({
-      title: "Selecionar DLL",
-      multiple: false,
-      filters: [{ name: "DLL", extensions: ["dll"] }],
-    });
-
-    if (typeof selected === "string") {
-      onDllPathChange(selected);
-    }
+  const handleBrowseClick = () => {
+    inputRef.current?.click();
   };
 
   return (
@@ -129,7 +121,7 @@ const InjectorCard = ({
           </p>
           <button
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 hover:border-[#4677FF]/40"
-            onClick={handleBrowse}
+            onClick={handleBrowseClick}
             type="button"
           >
             <FolderOpen className="h-4 w-4" />
