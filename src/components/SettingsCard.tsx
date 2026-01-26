@@ -34,6 +34,7 @@ const SettingsCard = ({
   saveMessage,
 }: SettingsCardProps) => {
   const [expanded, setExpanded] = useState(true);
+  const jarInputRef = useRef<HTMLInputElement>(null);
   const updateSettings = (partial: Partial<InjectorSettings>) => {
     onSettingsChange({ ...settings, ...partial });
   };
