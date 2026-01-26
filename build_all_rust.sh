@@ -51,6 +51,16 @@ if [[ ! -d "node_modules" ]]; then
   npm install
 fi
 
+# Limpar dist/ ANTES do build do frontend (remove .exe antigos)
+echo "==> Limpando pasta dist/ de arquivos antigos"
+if [[ -d "${DIST_DIR}" ]]; then
+  # Remove todos os .exe de dist/ (podem estar bloqueados)
+  find "${DIST_DIR}" -name "*.exe" -delete 2>/dev/null || true
+  # Se ainda existir dist/, tenta remover tudo
+  rm -rf "${DIST_DIR}" 2>/dev/null || true
+fi
+mkdir -p "${DIST_DIR}"
+
 # Build do frontend React + Vite
 echo "==> Building frontend (React + Vite)"
 npm run build
