@@ -40,12 +40,12 @@ const Dashboard = ({
                     YZY INJECTOR
                   </p>
                   <h1 className="text-2xl font-bold tracking-tight text-white">
-                    Advanced DLL Injection Suite
+                    Painel de Injeção Profissional
                   </h1>
                 </div>
               </div>
               <p className="mt-2 text-sm text-zinc-400">
-                Professional-grade injection toolkit for Windows processes
+                Controle total do injetor, com status em tempo real e modo watcher automático.
               </p>
             </div>
 
@@ -59,7 +59,7 @@ const Dashboard = ({
                 />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-medium text-zinc-500">System Status</p>
+                <p className="text-xs font-medium text-zinc-500">Status do Sistema</p>
                 <p className="text-sm font-semibold text-white">{status}</p>
               </div>
               {watcherActive && (
@@ -71,11 +71,11 @@ const Dashboard = ({
           {/* Info Pills */}
           <div className="mt-6 flex flex-wrap gap-3">
             <div className="rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-2 text-xs">
-              <span className="text-zinc-500">Target:</span>{' '}
+              <span className="text-zinc-500">Alvo:</span>{' '}
               <span className="font-semibold text-accent">{target}</span>
             </div>
             <div className="rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-2 text-xs">
-              <span className="text-zinc-500">Method:</span>{' '}
+              <span className="text-zinc-500">Método:</span>{' '}
               <span className="font-semibold text-white">{injectionMethod}</span>
             </div>
             <div className="rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-2 text-xs">
@@ -85,7 +85,7 @@ const Dashboard = ({
                   watcherActive ? 'text-green-400' : 'text-zinc-400'
                 }`}
               >
-                {watcherActive ? 'Active' : 'Inactive'}
+                {watcherActive ? 'Ativo' : 'Inativo'}
               </span>
             </div>
           </div>
