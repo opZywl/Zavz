@@ -102,17 +102,16 @@ const SettingsCard = ({
                 Standard
               </button>
               <button
-                className={`rounded-xl border px-3 py-2 ${
-                  settings.injectionMethod === "manual_map"
-                    ? "border-[#4677FF]/40 bg-[#4677FF]/20 text-[#4677FF]"
-                    : "border-zinc-800 bg-zinc-900 text-zinc-400"
-                }`}
-                onClick={() => updateSettings({ injectionMethod: "manual_map" })}
+                className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/60 px-3 py-2 text-zinc-500"
+                disabled
                 type="button"
               >
-                Manual Map
+                Manual Map <span className="ml-1 text-[10px]">(em breve)</span>
               </button>
             </div>
+            <p className="mt-2 text-[11px] text-zinc-500">
+              Manual Map ainda não está disponível. O modo Standard usa LoadLibrary.
+            </p>
           </div>
 
           <div className="grid gap-3 rounded-2xl border border-zinc-800 bg-black/30 p-4 text-xs text-zinc-400">
