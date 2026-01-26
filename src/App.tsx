@@ -168,7 +168,7 @@ const App = () => {
 
   // --- Render ---
   return (
-      <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 bg-[#020204] text-zinc-200 font-sans selection:bg-[var(--theme-primary)]/30 selection:text-[var(--theme-light)] overflow-hidden">
+      <div className="h-screen w-screen flex items-stretch justify-stretch bg-[#020204] text-zinc-200 font-sans selection:bg-[var(--theme-primary)]/30 selection:text-[var(--theme-light)] overflow-hidden">
 
         {/* Dynamic Theme Styles */}
         <style>{`
@@ -188,7 +188,7 @@ const App = () => {
         </div>
 
         {/* --- Main Window Container (Landscape) --- */}
-        <div className="w-full max-w-[1200px] h-[750px] bg-[#050508] rounded-2xl border border-[#1F1F2E] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col relative z-10 overflow-hidden ring-1 ring-white/5">
+        <div className="w-full h-full min-h-0 bg-[#050508] rounded-none border border-[#1F1F2E] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col relative z-10 overflow-hidden ring-1 ring-white/5">
 
           <LoadingScreen loading={loading} loadingStep={loadingStep} />
 
