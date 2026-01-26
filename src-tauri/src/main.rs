@@ -120,6 +120,13 @@ fn list_processes() -> Result<Vec<ProcessInfo>, String> {
     Ok(processes)
 }
 
+fn configure_window(app: &AppHandle) -> Result<(), tauri::Error> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.set_decorations(false)?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn get_settings(app: AppHandle) -> Result<InjectorSettings, String> {
     let path = settings_path(&app)?;
@@ -269,6 +276,10 @@ fn setup_fdp_jar(request: FdpJarRequest) -> Result<String, String> {
 fn main() {
     tauri::Builder::default()
         .manage(WatcherState::default())
+        .setup(|app| {
+            configure_window(app.handle())?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_settings,
             save_settings,
