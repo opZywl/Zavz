@@ -1,6 +1,6 @@
 import React from 'react';
-import { Settings, Palette, Edit3, Zap, Monitor, X, Coffee, Share2, EyeOff } from 'lucide-react';
-import { ToggleSwitch, Input, ThemeColor } from './ui';
+import { Settings, Palette, Edit3, Zap, Monitor, X, Coffee, Share2, EyeOff, Play } from 'lucide-react';
+import { ToggleSwitch, Input, ThemeColor, Button } from './ui';
 
 interface SettingsCardProps {
   theme: ThemeColor;
@@ -16,6 +16,7 @@ interface SettingsCardProps {
   setDiscordRpc: (v: boolean) => void;
   streamerMode: boolean;
   setStreamerMode: (v: boolean) => void;
+  onLaunchJvm?: () => void;
 }
 
 const SettingsCard: React.FC<SettingsCardProps> = ({
@@ -31,7 +32,8 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
   discordRpc,
   setDiscordRpc,
   streamerMode,
-  setStreamerMode
+  setStreamerMode,
+  onLaunchJvm
 }) => {
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-[fade-in-up_0.3s_ease-out]">
@@ -131,13 +133,25 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
                                     <p className="text-xs text-zinc-500">Custom launch parameters</p>
                                 </div>
                             </div>
-                            <Input 
-                                value={jvmArgs} 
-                                onChange={(e) => setJvmArgs(e.target.value)} 
+                            <Input
+                                value={jvmArgs}
+                                onChange={(e) => setJvmArgs(e.target.value)}
                                 className="text-xs font-mono bg-black/40 border-zinc-800"
                                 placeholder="-Xmx4G -XX:+UseG1GC"
                                 rightElement={<Edit3 size={12}/>}
                             />
+                            {onLaunchJvm && (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    fullWidth
+                                    onClick={onLaunchJvm}
+                                    className="text-xs"
+                                >
+                                    <Play size={12} />
+                                    Launch Java with Arguments
+                                </Button>
+                            )}
                         </div>
 
                         <div className="flex items-center justify-between p-3 bg-[#121215] rounded-xl border border-[#1F1F2E] group hover:border-zinc-700 transition-colors">

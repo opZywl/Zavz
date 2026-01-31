@@ -295,6 +295,30 @@ const App = () => {
     }
   };
 
+  const handleLaunchJvm = async () => {
+    try {
+      if (!fdpPath) {
+        addLog('No JAR file selected. Please select a JAR file first.', 'error');
+        return;
+      }
+
+      addLog(`Launching Java with arguments: ${jvmArgs}`, 'info');
+      addLog(`JAR path: ${fdpPath}`, 'system');
+
+      const result = await invoke<string>('launch_jvm', {
+        request: {
+          jarPath: fdpPath,
+          jvmArgs: jvmArgs
+        }
+      });
+
+      addLog(result, 'success');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      addLog(`Failed to launch JVM: ${errorMsg}`, 'error');
+    }
+  };
+
   const handleWatcherToggle = async (enabled: boolean) => {
     setWatcherActive(enabled);
 
@@ -423,6 +447,7 @@ const App = () => {
                         setDiscordRpc={setDiscordRpc}
                         streamerMode={streamerMode}
                         setStreamerMode={setStreamerMode}
+                        onLaunchJvm={handleLaunchJvm}
                     />
                 )}
 
