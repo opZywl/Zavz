@@ -27,3 +27,5 @@ Thumbs.db
 
 # Tauri
 src-tauri/Cargo.lock
+src-tauri/gen/
+src-tauri/icons/icon-*.png

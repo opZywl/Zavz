@@ -7,10 +7,10 @@ use std::os::raw::c_char;
 use std::path::PathBuf;
 
 use crate::injector;
-use dll_syringe::process::Process;
 
 /// C-compatible version of find_process_by_name
 /// Returns process ID or 0 if not found
+#[cfg(target_os = "windows")]
 #[no_mangle]
 pub extern "C" fn rust_get_proc_id(proc_name: *const c_char) -> u32 {
     if proc_name.is_null() {
@@ -34,8 +34,15 @@ pub extern "C" fn rust_get_proc_id(proc_name: *const c_char) -> u32 {
     }
 }
 
+#[cfg(not(target_os = "windows"))]
+#[no_mangle]
+pub extern "C" fn rust_get_proc_id(_proc_name: *const c_char) -> u32 {
+    0
+}
+
 /// C-compatible version of inject_dll
 /// Returns 0 on success, 1 on failure
+#[cfg(target_os = "windows")]
 #[no_mangle]
 pub extern "C" fn rust_perform_injection(
     proc_name: *const c_char,
@@ -69,6 +76,16 @@ pub extern "C" fn rust_perform_injection(
             Err(_) => 1,
         }
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+#[no_mangle]
+pub extern "C" fn rust_perform_injection(
+    _proc_name: *const c_char,
+    _dll_path: *const c_char,
+    _use_manual_map: bool,
+) -> i32 {
+    1
 }
 
 /// C-compatible version to get last error message
