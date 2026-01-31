@@ -112,7 +112,7 @@ const TopBar: React.FC = () => {
          {/* User Profile */}
          <div className="flex items-center gap-2 px-3 py-1 bg-[#121215] rounded-full border border-[#1F1F2E] pointer-events-none">
             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981] animate-pulse"></div>
-            <span className="text-[10px] text-zinc-400 font-mono">admin@yzy.cc</span>
+            <span className="text-[10px] text-zinc-400 font-mono">opzywl</span>
          </div>
 
          <div className="h-4 w-px bg-[#1F1F2E] pointer-events-none"></div>
