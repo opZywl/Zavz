@@ -7,6 +7,7 @@ use std::os::raw::c_char;
 use std::path::PathBuf;
 
 use crate::injector;
+use dll_syringe::process::Process;
 
 /// C-compatible version of find_process_by_name
 /// Returns process ID or 0 if not found

@@ -134,7 +134,7 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     // Allocate memory in target process
     let remote_base = unsafe {
         VirtualAllocEx(
-            process.handle() as _,
+            process.as_handle() as _,
             std::ptr::null(),
             image_size,
             MEM_COMMIT | MEM_RESERVE,
@@ -158,7 +158,7 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     // Cleanup: free allocated memory
     unsafe {
         VirtualFreeEx(
-            process.handle() as _,
+            process.as_handle() as _,
             remote_base,
             0,
             MEM_RELEASE,
