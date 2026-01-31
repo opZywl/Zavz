@@ -13,7 +13,7 @@ interface DashboardProps {
   handleInject: () => void;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
-  
+
   // Preferences/Wrapper Props
   clientWrapper: 'Lunar' | 'Badlion';
   handleClientWrapperChange: (wrapper: 'Lunar' | 'Badlion') => void;
@@ -24,6 +24,7 @@ interface DashboardProps {
   handleJarSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   watcherActive: boolean;
   setWatcherActive: (val: boolean) => void;
+  handleSaveSettings: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -43,7 +44,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   jarInputRef,
   handleJarSelect,
   watcherActive,
-  setWatcherActive
+  setWatcherActive,
+  handleSaveSettings
 }) => {
   return (
     <div className="max-w-6xl mx-auto space-y-6 h-full flex flex-col justify-center animate-[fade-in-up_0.3s_ease-out]">
@@ -130,7 +132,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <ToggleSwitch checked={watcherActive} onChange={setWatcherActive} />
                         </div>
 
-                        <Button variant="secondary" fullWidth className="mt-auto">
+                        <Button variant="secondary" fullWidth className="mt-auto" onClick={handleSaveSettings}>
                             <Save size={14} /> Save Configuration
                         </Button>
                     </div>
