@@ -25,7 +25,10 @@ pub extern "C" fn rust_get_proc_id(proc_name: *const c_char) -> u32 {
         };
 
         match injector::find_process_by_name(process_name) {
-            Ok(process) => process.pid(),
+            Ok(process) => match process.pid() {
+                Ok(pid) => pid.get(),
+                Err(_) => 0,
+            },
             Err(_) => 0,
         }
     }

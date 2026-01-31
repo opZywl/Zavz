@@ -5,14 +5,13 @@
 use dll_syringe::process::OwnedProcess;
 use std::fs::File;
 use std::io::Read;
+use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Memory::{
     VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
 };
-#[cfg(target_os = "windows")]
-use windows_sys::Win32::System::Threading::{CreateRemoteThread, WaitForSingleObject, INFINITE};
 
 // PE Header structures
 #[repr(C)]
@@ -134,7 +133,7 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     // Allocate memory in target process
     let remote_base = unsafe {
         VirtualAllocEx(
-            process.as_handle() as _,
+            process.as_raw_handle() as _,
             std::ptr::null(),
             image_size,
             MEM_COMMIT | MEM_RESERVE,
@@ -158,7 +157,7 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     // Cleanup: free allocated memory
     unsafe {
         VirtualFreeEx(
-            process.as_handle() as _,
+            process.as_raw_handle() as _,
             remote_base,
             0,
             MEM_RELEASE,
