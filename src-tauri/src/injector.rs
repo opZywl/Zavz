@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::fs;
-use dll_syringe::{process::OwnedProcess, Syringe};
 use sysinfo::System;
+
+#[cfg(target_os = "windows")]
+use dll_syringe::{process::OwnedProcess, Syringe};
 
 #[cfg(target_os = "windows")]
 use {
@@ -215,12 +217,13 @@ pub fn set_access_control(_file_path: &Path, _sid_string: &str) -> Result<(), St
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn validate_dll_architecture(_dll_path: &Path, _process: &OwnedProcess) -> Result<(), String> {
+pub fn validate_dll_architecture(_dll_path: &Path, _process: u32) -> Result<(), String> {
     // No-op on non-Windows platforms
     Ok(())
 }
 
 /// Find process by name
+#[cfg(target_os = "windows")]
 pub fn find_process_by_name(target: &str) -> Result<OwnedProcess, String> {
     let mut system = System::new_all();
     system.refresh_processes();
@@ -234,7 +237,13 @@ pub fn find_process_by_name(target: &str) -> Result<OwnedProcess, String> {
         .map_err(|err| format!("Falha ao abrir processo: {}", err))
 }
 
+#[cfg(not(target_os = "windows"))]
+pub fn find_process_by_name(target: &str) -> Result<u32, String> {
+    Err(format!("Process injection not supported on this platform"))
+}
+
 /// Perform DLL injection
+#[cfg(target_os = "windows")]
 pub fn inject_dll(
     process: OwnedProcess,
     dll_path: &PathBuf,
@@ -261,6 +270,15 @@ pub fn inject_dll(
         .inject(dll_path)
         .map(|_| ())
         .map_err(|err| format!("Erro ao injetar DLL: {}", err))
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn inject_dll(
+    _process: u32,
+    _dll_path: &PathBuf,
+    _use_manual_map: bool,
+) -> Result<(), String> {
+    Err("DLL injection not supported on this platform".to_string())
 }
 
 /// FDP Client Loader - Copy JAR to .fdpclient folder

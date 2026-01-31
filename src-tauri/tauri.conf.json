@@ -33,7 +33,7 @@
     "active": false,
     "category": "Utility",
     "icon": [
-      "icons/icon.png"
+      "icons/icon.ico"
     ],
     "targets": "all",
     "windows": {
@@ -41,16 +41,6 @@
         "type": "embedBootstrapper"
       }
     }
-  },
-  "permissions": [
-    "core:default",
-    "core:window:allow-close",
-    "core:window:allow-minimize",
-    "core:window:allow-maximize",
-    "core:window:allow-toggle-maximize",
-    "core:window:allow-start-dragging",
-    "core:window:allow-is-maximized",
-    "core:window:allow-set-decorations"
-  ]
+  }
 }
 

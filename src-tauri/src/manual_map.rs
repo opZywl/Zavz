@@ -2,9 +2,13 @@
 // This module implements stealth DLL injection by manually mapping the DLL into memory
 // without using LoadLibrary, making it harder to detect by anti-cheat systems
 
+#[cfg(target_os = "windows")]
 use dll_syringe::process::OwnedProcess;
+#[cfg(target_os = "windows")]
 use std::fs::File;
+#[cfg(target_os = "windows")]
 use std::io::Read;
+#[cfg(target_os = "windows")]
 use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
@@ -168,7 +172,7 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn manual_map_inject(_process: &OwnedProcess, _dll_path: &Path) -> Result<(), String> {
+pub fn manual_map_inject(_process: &u32, _dll_path: &Path) -> Result<(), String> {
     Err("Manual Map injection is only supported on Windows".to_string())
 }
 
