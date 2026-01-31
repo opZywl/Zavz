@@ -35,8 +35,19 @@
 
   /* Buttons should not be draggable */
   button {
-    -webkit-app-region: no-drag;
-    app-region: no-drag;
+    -webkit-app-region: no-drag !important;
+    app-region: no-drag !important;
+    cursor: pointer;
+    pointer-events: auto !important;
+  }
+
+  /* Ensure window controls are clickable */
+  button[aria-label*="window"],
+  button[aria-label*="Minimize"],
+  button[aria-label*="Maximize"],
+  button[aria-label*="Close"] {
+    position: relative;
+    z-index: 9999;
   }
 
   input[type='checkbox'] {
