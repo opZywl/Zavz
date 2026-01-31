@@ -5,7 +5,7 @@ import { Cpu, Layers, Coffee } from 'lucide-react';
 const AboutTab: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-[fade-in-up_0.3s_ease-out]">
-         <SectionCard title="About YZY Client" subtitle="System Info">
+         <SectionCard title="About YZY Inject" subtitle="System Info">
             <div className="space-y-6 text-zinc-300">
                 <div className="flex items-start gap-4 p-4 bg-[#121215] rounded-xl border border-zinc-800">
                     <div className="p-3 bg-[var(--theme-primary)]/10 rounded-lg border border-[var(--theme-primary)]/20">
@@ -14,7 +14,7 @@ const AboutTab: React.FC = () => {
                     <div>
                         <h4 className="text-white font-bold mb-1">Advanced Process Manipulation</h4>
                         <p className="text-sm text-zinc-400 leading-relaxed">
-                            YZY Client is an advanced process manipulation tool inspired by <strong>Process Hacker 2</strong>, engineered with robust resources for memory editing, dynamic DLL injection, and sophisticated thread management.
+                            YZY Inject is an advanced process manipulation tool inspired by <strong>Process Hacker 2</strong>, engineered with robust resources for memory editing, dynamic DLL injection, and sophisticated thread management.
                         </p>
                     </div>
                 </div>
@@ -40,7 +40,7 @@ const AboutTab: React.FC = () => {
 
                 <div className="flex justify-center pt-4 border-t border-zinc-800/50">
                     <p className="text-[10px] text-zinc-600 font-mono">
-                        COPYRIGHT © 2024 YZY CORP. ALL RIGHTS RESERVED.
+                        COPYRIGHT © FDP. ALL RIGHTS RESERVED.
                     </p>
                 </div>
             </div>
