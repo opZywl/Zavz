@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod injector;
+mod ffi_bridge;
+mod manual_map;
 
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
@@ -144,25 +146,59 @@ fn save_settings(app: AppHandle, settings: InjectorSettings) -> Result<String, S
 
 #[tauri::command]
 fn inject_dll(request: InjectRequest) -> Result<String, String> {
-    let dll_path = PathBuf::from(request.dll_path);
-    if !dll_path.exists() || !dll_path.is_file() {
-        return Err("Arquivo DLL não encontrado no caminho informado.".to_string());
+    // Validate target process name
+    if request.target.is_empty() {
+        return Err("Nome do processo não pode estar vazio.".to_string());
     }
 
+    // Validate DLL path
+    let dll_path = PathBuf::from(&request.dll_path);
+    if !dll_path.exists() {
+        return Err(format!("Arquivo DLL não encontrado: {}", request.dll_path));
+    }
+
+    if !dll_path.is_file() {
+        return Err(format!("Caminho especificado não é um arquivo: {}", request.dll_path));
+    }
+
+    // Validate DLL extension
+    let extension = dll_path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    if extension != "dll" && extension != "lib" {
+        return Err(format!("Arquivo deve ter extensão .dll ou .lib, encontrado: .{}", extension));
+    }
+
+    // Find the target process
     let process = injector::find_process_by_name(&request.target)?;
 
-    let manual_map_requested = matches!(request.method, InjectionMethod::ManualMap);
-    injector::inject_dll(process, &dll_path, false)?;
+    // Perform injection
+    let use_manual_map = matches!(request.method, InjectionMethod::ManualMap);
+    let result = injector::inject_dll(process, &dll_path, use_manual_map);
 
-    let mut response = String::new();
-    if manual_map_requested {
-        response.push_str("Manual Map indisponível. Usando Standard LoadLibrary. ");
+    match result {
+        Ok(_) => {
+            let mut response = String::new();
+            if use_manual_map {
+                response.push_str("[STEALTH MODE] ");
+            }
+            response.push_str(&format!(
+                "DLL '{}' injetada com sucesso em '{}'!",
+                dll_path.file_name().unwrap().to_string_lossy(),
+                request.target
+            ));
+            Ok(response)
+        }
+        Err(e) => {
+            // If manual map failed, suggest using standard
+            if use_manual_map && e.contains("not yet fully implemented") {
+                Err(format!("Manual Map não está completamente implementado. Por favor, use o método Standard. Detalhes: {}", e))
+            } else {
+                Err(e)
+            }
+        }
     }
-    response.push_str(&format!(
-        "DLL injetada com sucesso em '{}'!",
-        request.target
-    ));
-    Ok(response)
 }
 
 #[tauri::command]
@@ -180,9 +216,28 @@ fn start_watcher(
         return Err("Watcher já está em execução.".to_string());
     }
 
-    let dll_path = PathBuf::from(request.dll_path);
+    // Validate target process name
+    if request.target.is_empty() {
+        return Err("Nome do processo não pode estar vazio.".to_string());
+    }
+
+    // Validate DLL path
+    let dll_path = PathBuf::from(&request.dll_path);
     if !dll_path.exists() {
-        return Err("Arquivo DLL não encontrado no caminho informado.".to_string());
+        return Err(format!("Arquivo DLL não encontrado: {}", request.dll_path));
+    }
+
+    if !dll_path.is_file() {
+        return Err(format!("Caminho especificado não é um arquivo: {}", request.dll_path));
+    }
+
+    // Validate DLL extension
+    let extension = dll_path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    if extension != "dll" && extension != "lib" {
+        return Err(format!("Arquivo deve ter extensão .dll ou .lib, encontrado: .{}", extension));
     }
 
     let (stop_tx, mut stop_rx) = oneshot::channel();
