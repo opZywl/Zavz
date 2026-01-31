@@ -14,27 +14,17 @@
     -webkit-user-select: none;
   }
 
-  /* Tauri drag region - CRITICAL for window dragging */
-  [data-tauri-drag-region] {
-    -webkit-app-region: drag;
-    app-region: drag;
-  }
-
   /* Allow text selection in inputs and textareas */
   input, textarea, [contenteditable="true"] {
     user-select: text;
     -webkit-user-select: text;
-    -webkit-app-region: no-drag;
-    app-region: no-drag;
   }
 
-  /* All buttons should be clickable and NOT draggable */
+  /* All buttons should be clickable */
   button {
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-app-region: no-drag;
-    app-region: no-drag;
   }
 
   input[type='checkbox'] {
