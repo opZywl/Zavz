@@ -14,40 +14,17 @@
     -webkit-user-select: none;
   }
 
-  /* Tauri window drag region */
-  [data-tauri-drag-region] {
-    -webkit-app-region: drag;
-    app-region: drag;
-  }
-
-  [data-tauri-drag-region="false"] {
-    -webkit-app-region: no-drag;
-    app-region: no-drag;
-  }
-
   /* Allow text selection in inputs and textareas */
   input, textarea, [contenteditable="true"] {
     user-select: text;
     -webkit-user-select: text;
-    -webkit-app-region: no-drag;
-    app-region: no-drag;
   }
 
-  /* Buttons should not be draggable */
+  /* All buttons should be clickable */
   button {
-    -webkit-app-region: no-drag !important;
-    app-region: no-drag !important;
     cursor: pointer;
-    pointer-events: auto !important;
-  }
-
-  /* Ensure window controls are clickable */
-  button[aria-label*="window"],
-  button[aria-label*="Minimize"],
-  button[aria-label*="Maximize"],
-  button[aria-label*="Close"] {
-    position: relative;
-    z-index: 9999;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   input[type='checkbox'] {
