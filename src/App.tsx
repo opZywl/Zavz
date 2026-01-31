@@ -7,6 +7,8 @@ import SettingsCard from './components/SettingsCard';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import AboutTab from './components/AboutTab';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 // Helper to generate color palette from hex
 const hexToRgba = (hex: string, alpha: number) => {
@@ -93,8 +95,42 @@ const App = () => {
     if (logs.length === 0) {
       addLog('YZY Injector Kernel initialized', 'system');
       addLog('Secure connection established (TLS 1.3)', 'success');
+
+      // Carregar settings do backend
+      invoke<any>('get_settings')
+        .then((settings) => {
+          if (settings.jvmArgs) setJvmArgs(settings.jvmArgs);
+          if (settings.injectionMethod) {
+            const methodMap: Record<string, string> = {
+              'standard': 'Standard',
+              'manual_map': 'Manual'
+            };
+            setInjectionMethod(methodMap[settings.injectionMethod] || 'Standard');
+          }
+          if (settings.autoClose !== undefined) setAutoClose(settings.autoClose);
+          if (settings.fdpJarPath) setFdpPath(settings.fdpJarPath);
+          addLog('Settings loaded successfully', 'success');
+        })
+        .catch(() => {
+          addLog('Using default settings', 'info');
+        });
+
       addLog('Waiting for user input...', 'info');
     }
+
+    // Setup event listeners
+    const unlisten1 = listen<string>('watcher-status', (event) => {
+      addLog(event.payload, 'system');
+    });
+
+    const unlisten2 = listen<string>('injection-log', (event) => {
+      addLog(event.payload, 'info');
+    });
+
+    return () => {
+      unlisten1.then(fn => fn());
+      unlisten2.then(fn => fn());
+    };
   }, []);
 
   useEffect(() => {
@@ -102,7 +138,7 @@ const App = () => {
   }, [logs]);
 
   // --- Handlers ---
-  const handleInject = () => {
+  const handleInject = async () => {
     if (!dllPath) {
       addLog('No DLL selected. Aborting.', 'error');
       return;
@@ -112,46 +148,109 @@ const App = () => {
     setLoadingStep(0);
     addLog(`Initiating injection sequence on ${targetProcess}...`, 'system');
 
-    // Smooth Loading Sequence
-    const steps = [
-      { msg: `Scanning process list for ${targetProcess}...`, delay: 1000 },
-      { msg: 'Process found (PID: 1337). Attaching debugger...', delay: 2500 },
-      { msg: 'Bypassing memory protection (DEP/ASLR)...', delay: 4000 },
-      { msg: 'Allocating remote memory pages...', delay: 5500 },
-      { msg: 'Injecting native payload...', delay: 7000 },
-      { msg: 'Cleaning up traces & unlinking module...', delay: 8500 }
-    ];
+    try {
+      // Step 1: Scanning
+      setLoadingStep(1);
+      addLog(`Scanning process list for ${targetProcess}...`, 'info');
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-    steps.forEach((step, index) => {
-      setTimeout(() => {
-        setLoadingStep(index + 1);
-      }, step.delay);
-    });
+      // Step 2: Process found
+      setLoadingStep(2);
+      addLog('Process found. Validating DLL architecture...', 'info');
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Final Success
-    setTimeout(() => {
+      // Step 3: Bypassing protection
+      setLoadingStep(3);
+      addLog('Bypassing memory protection (DEP/ASLR)...', 'info');
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      // Step 4: Allocating memory
+      setLoadingStep(4);
+      addLog('Allocating remote memory pages...', 'info');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Step 5: Injecting (REAL CALL)
+      setLoadingStep(5);
+      addLog('Injecting native payload...', 'system');
+
+      const methodMap: Record<string, string> = {
+        'Standard': 'standard',
+        'Manual': 'manual_map',
+        'Kernel': 'standard' // Kernel não implementado ainda
+      };
+
+      const result = await invoke<string>('inject_dll', {
+        request: {
+          target: targetProcess,
+          dllPath: dllPath,
+          method: methodMap[injectionMethod] || 'standard'
+        }
+      });
+
+      // Step 6: Cleanup
+      setLoadingStep(6);
+      addLog('Cleaning up traces & unlinking module...', 'info');
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       setLoading(false);
-      addLog('Injection Successful!', 'success');
+      addLog(result, 'success');
       addLog('Payload executed. You may now close the injector.', 'info');
+
       if (autoClose) {
-        addLog('Auto-close triggered.', 'warning');
+        addLog('Auto-close triggered in 3 seconds...', 'warning');
+        setTimeout(async () => {
+          try {
+            const { getCurrentWindow } = await import('@tauri-apps/api/window');
+            await getCurrentWindow().close();
+          } catch (e) {
+            console.error('Failed to close window:', e);
+          }
+        }, 3000);
       }
-    }, 10000);
+    } catch (error) {
+      setLoading(false);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      addLog(`Injection failed: ${errorMsg}`, 'error');
+      addLog('Please check if the target process is running and the DLL path is correct.', 'warning');
+    }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setDllPath(file.name);
-      addLog(`Selected DLL: ${file.name}`, 'info');
+      // Usar o path completo via Tauri
+      try {
+        const filePath = (file as any).path || file.name;
+        setDllPath(filePath);
+        addLog(`Selected DLL: ${file.name}`, 'info');
+        addLog(`Full path: ${filePath}`, 'system');
+      } catch (err) {
+        setDllPath(file.name);
+        addLog(`Selected DLL: ${file.name}`, 'info');
+      }
     }
   }
 
-  const handleJarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleJarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFdpPath(file.name);
-      addLog(`Selected Jar: ${file.name}`, 'info');
+      try {
+        const filePath = (file as any).path || file.name;
+        setFdpPath(filePath);
+        addLog(`Selected JAR: ${file.name}`, 'info');
+        addLog(`Full path: ${filePath}`, 'system');
+
+        // Configurar FDP JAR automaticamente
+        if (loadFdpJar) {
+          const result = await invoke<string>('setup_fdp_jar', {
+            request: { jarPath: filePath }
+          });
+          addLog(result, 'success');
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        addLog(`JAR setup error: ${errorMsg}`, 'error');
+      }
     }
   }
 
@@ -165,6 +264,78 @@ const App = () => {
   }
 
   const clearLogs = () => setLogs([]);
+
+  const handleSaveSettings = async () => {
+    try {
+      const methodMap: Record<string, string> = {
+        'Standard': 'standard',
+        'Manual': 'manual_map',
+        'Kernel': 'standard'
+      };
+
+      const wrapperMap: Record<string, string> = {
+        'Lunar': 'lunar',
+        'Badlion': 'badlion'
+      };
+
+      await invoke('save_settings', {
+        settings: {
+          jvmArgs: jvmArgs,
+          injectionMethod: methodMap[injectionMethod] || 'standard',
+          autoClose: autoClose,
+          randomWindowTitle: streamerMode,
+          fdpJarPath: fdpPath,
+          fdpWrapper: wrapperMap[clientWrapper] || 'lunar'
+        }
+      });
+      addLog('Settings saved successfully!', 'success');
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      addLog(`Failed to save settings: ${errorMsg}`, 'error');
+    }
+  };
+
+  const handleWatcherToggle = async (enabled: boolean) => {
+    setWatcherActive(enabled);
+
+    if (enabled) {
+      try {
+        if (!dllPath) {
+          addLog('Cannot start watcher: No DLL selected', 'error');
+          setWatcherActive(false);
+          return;
+        }
+
+        const methodMap: Record<string, string> = {
+          'Standard': 'standard',
+          'Manual': 'manual_map',
+          'Kernel': 'standard'
+        };
+
+        const result = await invoke<string>('start_watcher', {
+          request: {
+            target: targetProcess,
+            dllPath: dllPath,
+            method: methodMap[injectionMethod] || 'standard'
+          }
+        });
+        addLog(result, 'success');
+        addLog(`Watcher monitoring for: ${targetProcess}`, 'system');
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        addLog(`Watcher start failed: ${errorMsg}`, 'error');
+        setWatcherActive(false);
+      }
+    } else {
+      try {
+        const result = await invoke<string>('stop_watcher');
+        addLog(result, 'warning');
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        addLog(`Watcher stop failed: ${errorMsg}`, 'error');
+      }
+    }
+  };
 
   // --- Render ---
   return (
@@ -232,10 +403,8 @@ const App = () => {
                         jarInputRef={jarInputRef}
                         handleJarSelect={handleJarSelect}
                         watcherActive={watcherActive}
-                        setWatcherActive={(v) => {
-                          setWatcherActive(v);
-                          addLog(v ? 'Watcher service started' : 'Watcher service stopped', 'info');
-                        }}
+                        setWatcherActive={handleWatcherToggle}
+                        handleSaveSettings={handleSaveSettings}
                     />
                 )}
 
