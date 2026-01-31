@@ -328,6 +328,48 @@ fn setup_fdp_jar(request: FdpJarRequest) -> Result<String, String> {
     ))
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LaunchJvmRequest {
+    jar_path: String,
+    jvm_args: String,
+}
+
+#[tauri::command]
+fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
+    use std::process::Command;
+
+    let jar_path = PathBuf::from(&request.jar_path);
+    if !jar_path.exists() {
+        return Err(format!("Arquivo JAR não encontrado: {}", request.jar_path));
+    }
+
+    // Split JVM arguments
+    let args: Vec<&str> = if request.jvm_args.is_empty() {
+        vec![]
+    } else {
+        request.jvm_args.split_whitespace().collect()
+    };
+
+    // Build command
+    let mut cmd = Command::new("java");
+
+    // Add JVM arguments
+    for arg in args {
+        cmd.arg(arg);
+    }
+
+    // Add JAR
+    cmd.arg("-jar");
+    cmd.arg(jar_path.to_str().unwrap());
+
+    // Spawn process
+    match cmd.spawn() {
+        Ok(_) => Ok(format!("Java lançado com sucesso!\nArgumentos: {}", request.jvm_args)),
+        Err(e) => Err(format!("Falha ao lançar Java: {}", e)),
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(WatcherState::default())
@@ -343,6 +385,7 @@ fn main() {
             start_watcher,
             stop_watcher,
             setup_fdp_jar,
+            launch_jvm,
         ])
         .run(generate_context!())
         .expect("Erro ao executar aplicação Tauri");
