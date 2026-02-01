@@ -5,7 +5,7 @@ export interface ProcessInfo {
   name: string;
 }
 
-export type InjectionMethod = 'standard' | 'manual_map';
+export type InjectionMethod = 'standard' | 'manual_map' | 'thread_hijack' | 'reflective';
 export type FdpWrapper = 'lunar' | 'badlion';
 
 export interface InjectRequest {

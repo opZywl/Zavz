@@ -103,7 +103,9 @@ const App = () => {
           if (settings.injectionMethod) {
             const methodMap: Record<string, string> = {
               'standard': 'Standard',
-              'manual_map': 'Manual'
+              'manual_map': 'Manual',
+              'thread_hijack': 'Thread Hijack',
+              'reflective': 'Reflective'
             };
             setInjectionMethod(methodMap[settings.injectionMethod] || 'Standard');
           }
@@ -176,7 +178,8 @@ const App = () => {
       const methodMap: Record<string, string> = {
         'Standard': 'standard',
         'Manual': 'manual_map',
-        'Kernel': 'standard' // Kernel não implementado ainda
+        'Thread Hijack': 'thread_hijack',
+        'Reflective': 'reflective'
       };
 
       const result = await invoke<string>('inject_dll', {
@@ -270,7 +273,8 @@ const App = () => {
       const methodMap: Record<string, string> = {
         'Standard': 'standard',
         'Manual': 'manual_map',
-        'Kernel': 'standard'
+        'Thread Hijack': 'thread_hijack',
+        'Reflective': 'reflective'
       };
 
       const wrapperMap: Record<string, string> = {
@@ -333,7 +337,8 @@ const App = () => {
         const methodMap: Record<string, string> = {
           'Standard': 'standard',
           'Manual': 'manual_map',
-          'Kernel': 'standard'
+          'Thread Hijack': 'thread_hijack',
+          'Reflective': 'reflective'
         };
 
         const result = await invoke<string>('start_watcher', {

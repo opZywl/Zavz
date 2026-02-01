@@ -7,6 +7,7 @@ use std::os::raw::c_char;
 use std::path::PathBuf;
 
 use crate::injector;
+use crate::injection_method::InjectionMethod;
 
 #[cfg(target_os = "windows")]
 use dll_syringe::process::Process;
@@ -74,7 +75,13 @@ pub extern "C" fn rust_perform_injection(
             Err(_) => return 1,
         };
 
-        match injector::inject_dll(process, &dll_path_buf, use_manual_map) {
+        let method = if use_manual_map {
+            InjectionMethod::ManualMap
+        } else {
+            InjectionMethod::Standard
+        };
+
+        match injector::inject_dll(process, &dll_path_buf, method) {
             Ok(_) => 0,
             Err(_) => 1,
         }
