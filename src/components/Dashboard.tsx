@@ -15,6 +15,8 @@ interface DashboardProps {
   fileInputRef: React.RefObject<HTMLInputElement>;
 
   // Preferences/Wrapper Props
+  fdpMode: boolean;
+  setFdpMode: (val: boolean) => void;
   clientWrapper: 'Lunar' | 'Badlion';
   handleClientWrapperChange: (wrapper: 'Lunar' | 'Badlion') => void;
   loadFdpJar: boolean;
@@ -36,6 +38,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   handleInject,
   handleFileSelect,
   fileInputRef,
+  fdpMode,
+  setFdpMode,
   clientWrapper,
   handleClientWrapperChange,
   loadFdpJar,
@@ -52,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="grid grid-cols-12 gap-6 h-full">
             {/* Injector Hub */}
             <div className="col-span-8 space-y-6 flex flex-col">
-                <InjectorCard 
+                <InjectorCard
                     targetProcess={targetProcess}
                     setTargetProcess={setTargetProcess}
                     dllPath={dllPath}
@@ -61,6 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     handleInject={handleInject}
                     handleFileSelect={handleFileSelect}
                     fileInputRef={fileInputRef}
+                    fdpMode={fdpMode}
                 />
             </div>
 
@@ -68,6 +73,19 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="col-span-4 space-y-6 flex flex-col">
                 <SectionCard title="Preferences" subtitle="Wrapper" className="h-full flex-1">
                     <div className="space-y-6 h-full flex flex-col">
+                        {/* FDP Mode Toggle */}
+                        <div className="p-3 bg-[#15151a] rounded-xl border border-zinc-800 flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold text-zinc-300 flex items-center gap-2">
+                                    <Activity size={12} className="text-[var(--theme-primary)]"/> FDP Mode
+                                </span>
+                                <span className={`text-[10px] font-mono mt-0.5 ${fdpMode ? 'text-[var(--theme-light)]' : 'text-zinc-500'}`}>
+                                    {fdpMode ? 'ACTIVE' : 'DISABLED'}
+                                </span>
+                            </div>
+                            <ToggleSwitch checked={fdpMode} onChange={setFdpMode} />
+                        </div>
+
                         {/* Client Wrapper */}
                         <div className="space-y-3">
                             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Client Wrapper</label>

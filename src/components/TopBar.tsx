@@ -118,7 +118,7 @@ const TopBar: React.FC = () => {
               <Shield size={14} className="text-white" strokeWidth={3} />
            </div>
            <span className="text-sm font-bold tracking-widest text-zinc-200">
-             YZY <span className="text-[var(--theme-primary)] transition-colors">CLIENT</span>
+             YZY <span className="text-[var(--theme-primary)] transition-colors">INJECT</span>
            </span>
            <Badge variant="info">v2.4.1</Badge>
         </div>
