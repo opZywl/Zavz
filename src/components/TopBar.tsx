@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Minus, Maximize2, X, AlertCircle } from 'lucide-react';
+import { Shield, Minus, Maximize2, X } from 'lucide-react';
 import { Badge } from './ui';
-
-// Import direto da API do Tauri
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
 
 interface DebugLog {
   id: number;
@@ -14,13 +13,10 @@ interface DebugLog {
 const TopBar: React.FC = () => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
-  const [showDebug, setShowDebug] = useState(false);
 
   const addDebugLog = (message: string) => {
     const time = new Date().toLocaleTimeString();
     setDebugLogs(prev => [...prev.slice(-4), { id: Date.now(), message, time }]);
-    setShowDebug(true);
-    setTimeout(() => setShowDebug(false), 5000);
   };
 
   useEffect(() => {
@@ -35,23 +31,32 @@ const TopBar: React.FC = () => {
     };
 
     checkMaximized();
+
+    // Ouvir eventos do backend para exibir nas notificações
+    const unlistenWatcher = listen<string>('watcher-status', (event) => {
+      addDebugLog(event.payload);
+    });
+
+    const unlistenInjection = listen<string>('injection-log', (event) => {
+      addDebugLog(event.payload);
+    });
+
+    return () => {
+      unlistenWatcher.then(fn => fn());
+      unlistenInjection.then(fn => fn());
+    };
   }, []);
 
   const handleMinimize = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    addDebugLog('🔽 MINIMIZE: Botão clicado');
-
     try {
       const win = getCurrentWindow();
-      addDebugLog('🔽 MINIMIZE: Obtendo janela...');
-
       await win.minimize();
-      addDebugLog('✅ MINIMIZE: Sucesso!');
     } catch (err) {
       const errorMsg = String(err);
-      addDebugLog('❌ MINIMIZE: ERRO - ' + errorMsg);
+      addDebugLog('Erro ao minimizar: ' + errorMsg);
       alert('ERRO AO MINIMIZAR:\n' + errorMsg);
     }
   };
@@ -60,20 +65,14 @@ const TopBar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    addDebugLog('📐 MAXIMIZE: Botão clicado');
-
     try {
       const win = getCurrentWindow();
-      addDebugLog('📐 MAXIMIZE: Obtendo janela...');
-
       await win.toggleMaximize();
       const maximized = await win.isMaximized();
       setIsMaximized(maximized);
-
-      addDebugLog(`✅ MAXIMIZE: ${maximized ? 'Maximizado' : 'Restaurado'}!`);
     } catch (err) {
       const errorMsg = String(err);
-      addDebugLog('❌ MAXIMIZE: ERRO - ' + errorMsg);
+      addDebugLog('Erro ao maximizar: ' + errorMsg);
       alert('ERRO AO MAXIMIZAR:\n' + errorMsg);
     }
   };
@@ -82,18 +81,12 @@ const TopBar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    addDebugLog('❌ CLOSE: Botão clicado');
-
     try {
       const win = getCurrentWindow();
-      addDebugLog('❌ CLOSE: Obtendo janela...');
-      addDebugLog('❌ CLOSE: Chamando close()...');
-
       await win.close();
-      addDebugLog('✅ CLOSE: Sucesso!');
     } catch (err) {
       const errorMsg = String(err);
-      addDebugLog('❌ CLOSE: ERRO - ' + errorMsg);
+      addDebugLog('Erro ao fechar: ' + errorMsg);
       alert('ERRO AO FECHAR:\n' + errorMsg + '\n\nPressione Alt+F4 para fechar');
     }
   };
@@ -194,17 +187,14 @@ const TopBar: React.FC = () => {
       </div>
 
       {/* Debug Overlay - Aparece no topo da tela */}
-      {showDebug && debugLogs.length > 0 && (
-        <div className="fixed top-14 right-4 z-[99999] space-y-2">
+      {debugLogs.length > 0 && (
+        <div className="fixed top-14 right-4 z-[99999] space-y-2 max-w-md">
           {debugLogs.map((log) => (
             <div
               key={log.id}
               className="bg-black/90 border border-[var(--theme-primary)] rounded-lg px-4 py-2 shadow-2xl backdrop-blur-sm animate-[fade-in_0.2s_ease-out]"
             >
-              <div className="flex items-center gap-2">
-                <AlertCircle size={16} className="text-[var(--theme-primary)]" />
-                <span className="text-xs font-mono text-zinc-200">{log.message}</span>
-              </div>
+              <span className="text-xs font-mono text-zinc-200 block">{log.message}</span>
               <span className="text-[10px] text-zinc-500 font-mono">{log.time}</span>
             </div>
           ))}
