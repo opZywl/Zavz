@@ -3,7 +3,7 @@
 // without using LoadLibrary, making it harder to detect by anti-cheat systems
 
 #[cfg(target_os = "windows")]
-use dll_syringe::process::OwnedProcess;
+use dll_syringe::process::{OwnedProcess, Process};
 #[cfg(target_os = "windows")]
 use std::fs::File;
 #[cfg(target_os = "windows")]
@@ -169,11 +169,6 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     }
 
     Err("Manual Map injection is not yet fully implemented. Use Standard injection instead.".to_string())
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn manual_map_inject(_process: &u32, _dll_path: &Path) -> Result<(), String> {
-    Err("Manual Map injection is only supported on Windows".to_string())
 }
 
 #[cfg(test)]
