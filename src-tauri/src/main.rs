@@ -2,7 +2,10 @@
 
 mod injector;
 mod ffi_bridge;
+mod injection_method;
 mod manual_map;
+mod reflective;
+mod thread_hijack;
 
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
@@ -17,12 +20,7 @@ struct ProcessInfo {
     name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-#[serde(rename_all = "snake_case")]
-enum InjectionMethod {
-    Standard,
-    ManualMap,
-}
+use injection_method::InjectionMethod;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -174,14 +172,17 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
     let process = injector::find_process_by_name(&request.target)?;
 
     // Perform injection
-    let use_manual_map = matches!(request.method, InjectionMethod::ManualMap);
-    let result = injector::inject_dll(process, &dll_path, use_manual_map);
+    let result = injector::inject_dll(process, &dll_path, request.method);
 
     match result {
         Ok(_) => {
             let mut response = String::new();
-            if use_manual_map {
+            if matches!(request.method, InjectionMethod::ManualMap) {
                 response.push_str("[STEALTH MODE] ");
+            } else if matches!(request.method, InjectionMethod::ThreadHijack) {
+                response.push_str("[THREAD HIJACK] ");
+            } else if matches!(request.method, InjectionMethod::Reflective) {
+                response.push_str("[REFLECTIVE] ");
             }
             response.push_str(&format!(
                 "DLL '{}' successfully injected into '{}'!",
@@ -190,14 +191,7 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
             ));
             Ok(response)
         }
-        Err(e) => {
-            // If manual map failed, suggest using standard
-            if use_manual_map && e.contains("not yet fully implemented") {
-                Err(format!("Manual Map is not fully implemented yet. Please use Standard method. Details: {}", e))
-            } else {
-                Err(e)
-            }
-        }
+        Err(e) => Err(e),
     }
 }
 
@@ -263,15 +257,8 @@ fn start_watcher(
                 if last_pid != Some(current_pid) {
                     let _ = app_handle.emit("watcher-status", "Process found. Injecting...");
 
-                    if matches!(method, InjectionMethod::ManualMap) {
-                        let _ = app_handle.emit(
-                            "watcher-status",
-                            "Manual Map unavailable. Using Standard LoadLibrary.",
-                        );
-                    }
-
                     match injector::find_process_by_name(&target)
-                        .and_then(|proc| injector::inject_dll(proc, &dll_path, false))
+                        .and_then(|proc| injector::inject_dll(proc, &dll_path, method))
                     {
                         Ok(_) => {
                             let _ = app_handle.emit("watcher-status", format!("DLL successfully injected into '{}'!", target));
