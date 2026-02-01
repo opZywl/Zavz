@@ -9,6 +9,7 @@ import TopBar from './components/TopBar';
 import AboutTab from './components/AboutTab';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { resolveResource } from '@tauri-apps/api/path';
 
 // Helper to generate color palette from hex
 const hexToRgba = (hex: string, alpha: number) => {
@@ -145,8 +146,16 @@ const App = () => {
   // Auto-set DLL path when FDP Mode is enabled
   useEffect(() => {
     if (fdpMode) {
-      setDllPath('src/load/native.dll');
-      addLog('FDP Mode activated', 'system');
+      resolveResource('native.dll')
+        .then((resourcePath) => {
+          setDllPath(resourcePath);
+          addLog('FDP Mode activated', 'system');
+        })
+        .catch(() => {
+          // Fallback for development mode
+          setDllPath('src/load/native.dll');
+          addLog('FDP Mode activated', 'system');
+        });
     }
   }, [fdpMode]);
 
