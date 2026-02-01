@@ -184,10 +184,7 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
             } else if matches!(request.method, InjectionMethod::Reflective) {
                 response.push_str("[REFLECTIVE] ");
             }
-            response.push_str(&format!(
-                "Successfully injected into '{}'!",
-                dll_path.file_name().unwrap().to_string_lossy(),
-            ));
+            response.push_str(&"Successfully injected thanks Zywl".to_string());
             Ok(response)
         }
         Err(e) => Err(e),
