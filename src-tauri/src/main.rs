@@ -91,9 +91,9 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let config_dir = app
         .path()
         .app_config_dir()
-        .map_err(|err| format!("Falha ao obter pasta de config: {err}"))?;
+        .map_err(|err| format!("Failed to get config folder: {err}"))?;
     fs::create_dir_all(&config_dir)
-        .map_err(|err| format!("Falha ao criar pasta de config: {err}"))?;
+        .map_err(|err| format!("Failed to create config folder: {err}"))?;
     Ok(config_dir.join("yzy_injector_settings.json"))
 }
 
@@ -101,8 +101,8 @@ fn load_settings(path: &PathBuf) -> Result<InjectorSettings, String> {
     if !path.exists() {
         return Ok(InjectorSettings::default());
     }
-    let data = fs::read_to_string(path).map_err(|err| format!("Falha ao ler config: {err}"))?;
-    serde_json::from_str(&data).map_err(|err| format!("Config inválida: {err}"))
+    let data = fs::read_to_string(path).map_err(|err| format!("Failed to read config: {err}"))?;
+    serde_json::from_str(&data).map_err(|err| format!("Invalid config: {err}"))
 }
 
 #[tauri::command]
@@ -139,26 +139,26 @@ fn get_settings(app: AppHandle) -> Result<InjectorSettings, String> {
 fn save_settings(app: AppHandle, settings: InjectorSettings) -> Result<String, String> {
     let path = settings_path(&app)?;
     let data =
-        serde_json::to_string_pretty(&settings).map_err(|err| format!("Falha ao serializar: {err}"))?;
-    fs::write(&path, data).map_err(|err| format!("Falha ao salvar config: {err}"))?;
-    Ok("Configurações salvas.".to_string())
+        serde_json::to_string_pretty(&settings).map_err(|err| format!("Failed to serialize: {err}"))?;
+    fs::write(&path, data).map_err(|err| format!("Failed to save config: {err}"))?;
+    Ok("Settings saved.".to_string())
 }
 
 #[tauri::command]
 fn inject_dll(request: InjectRequest) -> Result<String, String> {
     // Validate target process name
     if request.target.is_empty() {
-        return Err("Nome do processo não pode estar vazio.".to_string());
+        return Err("Process name cannot be empty.".to_string());
     }
 
     // Validate DLL path
     let dll_path = PathBuf::from(&request.dll_path);
     if !dll_path.exists() {
-        return Err(format!("Arquivo DLL não encontrado: {}", request.dll_path));
+        return Err(format!("DLL file not found: {}", request.dll_path));
     }
 
     if !dll_path.is_file() {
-        return Err(format!("Caminho especificado não é um arquivo: {}", request.dll_path));
+        return Err(format!("Specified path is not a file: {}", request.dll_path));
     }
 
     // Validate DLL extension
@@ -167,7 +167,7 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
         .unwrap_or("");
 
     if extension != "dll" && extension != "lib" {
-        return Err(format!("Arquivo deve ter extensão .dll ou .lib, encontrado: .{}", extension));
+        return Err(format!("File must have .dll or .lib extension, found: .{}", extension));
     }
 
     // Find the target process
@@ -184,7 +184,7 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
                 response.push_str("[STEALTH MODE] ");
             }
             response.push_str(&format!(
-                "DLL '{}' injetada com sucesso em '{}'!",
+                "DLL '{}' successfully injected into '{}'!",
                 dll_path.file_name().unwrap().to_string_lossy(),
                 request.target
             ));
@@ -193,7 +193,7 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
         Err(e) => {
             // If manual map failed, suggest using standard
             if use_manual_map && e.contains("not yet fully implemented") {
-                Err(format!("Manual Map não está completamente implementado. Por favor, use o método Standard. Detalhes: {}", e))
+                Err(format!("Manual Map is not fully implemented yet. Please use Standard method. Details: {}", e))
             } else {
                 Err(e)
             }
@@ -210,25 +210,25 @@ fn start_watcher(
     let mut guard = state
         .handle
         .lock()
-        .map_err(|_| "Estado do watcher corrompido.".to_string())?;
+        .map_err(|_| "Watcher state corrupted.".to_string())?;
 
     if guard.is_some() {
-        return Err("Watcher já está em execução.".to_string());
+        return Err("Watcher is already running.".to_string());
     }
 
     // Validate target process name
     if request.target.is_empty() {
-        return Err("Nome do processo não pode estar vazio.".to_string());
+        return Err("Process name cannot be empty.".to_string());
     }
 
     // Validate DLL path
     let dll_path = PathBuf::from(&request.dll_path);
     if !dll_path.exists() {
-        return Err(format!("Arquivo DLL não encontrado: {}", request.dll_path));
+        return Err(format!("DLL file not found: {}", request.dll_path));
     }
 
     if !dll_path.is_file() {
-        return Err(format!("Caminho especificado não é um arquivo: {}", request.dll_path));
+        return Err(format!("Specified path is not a file: {}", request.dll_path));
     }
 
     // Validate DLL extension
@@ -237,7 +237,7 @@ fn start_watcher(
         .unwrap_or("");
 
     if extension != "dll" && extension != "lib" {
-        return Err(format!("Arquivo deve ter extensão .dll ou .lib, encontrado: .{}", extension));
+        return Err(format!("File must have .dll or .lib extension, found: .{}", extension));
     }
 
     let (stop_tx, mut stop_rx) = oneshot::channel();
@@ -251,7 +251,7 @@ fn start_watcher(
 
         loop {
             if stop_rx.try_recv().is_ok() {
-                let _ = app_handle.emit("watcher-status", "Watcher parado.");
+                let _ = app_handle.emit("watcher-status", "Watcher stopped.");
                 break;
             }
 
@@ -261,12 +261,12 @@ fn start_watcher(
 
                 // Only inject if it's a new process instance
                 if last_pid != Some(current_pid) {
-                    let _ = app_handle.emit("watcher-status", "Processo encontrado. Injetando...");
+                    let _ = app_handle.emit("watcher-status", "Process found. Injecting...");
 
                     if matches!(method, InjectionMethod::ManualMap) {
                         let _ = app_handle.emit(
                             "watcher-status",
-                            "Manual Map indisponível. Usando Standard LoadLibrary.",
+                            "Manual Map unavailable. Using Standard LoadLibrary.",
                         );
                     }
 
@@ -274,17 +274,17 @@ fn start_watcher(
                         .and_then(|proc| injector::inject_dll(proc, &dll_path, false))
                     {
                         Ok(_) => {
-                            let _ = app_handle.emit("watcher-status", format!("DLL injetada com sucesso em '{}'!", target));
+                            let _ = app_handle.emit("watcher-status", format!("DLL successfully injected into '{}'!", target));
                             last_pid = Some(current_pid);
                             // Don't break - continue watching for new instances
                         }
                         Err(err) => {
-                            let _ = app_handle.emit("watcher-status", format!("Erro: {}", err));
+                            let _ = app_handle.emit("watcher-status", format!("Error: {}", err));
                         }
                     }
                 }
             } else {
-                let _ = app_handle.emit("watcher-status", format!("Aguardando {}...", target));
+                let _ = app_handle.emit("watcher-status", format!("Waiting for {}...", target));
                 last_pid = None;
             }
 
@@ -294,7 +294,7 @@ fn start_watcher(
 
     *guard = Some(WatcherHandle { stop: stop_tx });
 
-    Ok("Watcher iniciado.".to_string())
+    Ok("Watcher started.".to_string())
 }
 
 #[tauri::command]
@@ -302,14 +302,14 @@ fn stop_watcher(state: State<'_, WatcherState>) -> Result<String, String> {
     let mut guard = state
         .handle
         .lock()
-        .map_err(|_| "Estado do watcher corrompido.".to_string())?;
+        .map_err(|_| "Watcher state corrupted.".to_string())?;
 
     if let Some(handle) = guard.take() {
         let _ = handle.stop.send(());
-        return Ok("Watcher interrompido.".to_string());
+        return Ok("Watcher stopped.".to_string());
     }
 
-    Err("Watcher não está ativo.".to_string())
+    Err("Watcher is not active.".to_string())
 }
 
 #[tauri::command]
@@ -317,13 +317,13 @@ fn setup_fdp_jar(request: FdpJarRequest) -> Result<String, String> {
     let jar_path = PathBuf::from(request.jar_path);
 
     if !jar_path.exists() || !jar_path.is_file() {
-        return Err("Arquivo JAR não encontrado.".to_string());
+        return Err("JAR file not found.".to_string());
     }
 
     let dest_path = injector::setup_fdp_jar(&jar_path)?;
 
     Ok(format!(
-        "JAR copiado para: {}",
+        "JAR copied to: {}",
         dest_path.display()
     ))
 }
@@ -341,7 +341,7 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
 
     let jar_path = PathBuf::from(&request.jar_path);
     if !jar_path.exists() {
-        return Err(format!("Arquivo JAR não encontrado: {}", request.jar_path));
+        return Err(format!("JAR file not found: {}", request.jar_path));
     }
 
     // Split JVM arguments
@@ -365,8 +365,8 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
 
     // Spawn process
     match cmd.spawn() {
-        Ok(_) => Ok(format!("Java lançado com sucesso!\nArgumentos: {}", request.jvm_args)),
-        Err(e) => Err(format!("Falha ao lançar Java: {}", e)),
+        Ok(_) => Ok(format!("Java launched successfully!\nArguments: {}", request.jvm_args)),
+        Err(e) => Err(format!("Failed to launch Java: {}", e)),
     }
 }
 
@@ -388,5 +388,5 @@ fn main() {
             launch_jvm,
         ])
         .run(generate_context!())
-        .expect("Erro ao executar aplicação Tauri");
+        .expect("Error running Tauri application");
 }

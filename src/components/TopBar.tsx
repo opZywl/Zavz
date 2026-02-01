@@ -56,8 +56,8 @@ const TopBar: React.FC = () => {
       await win.minimize();
     } catch (err) {
       const errorMsg = String(err);
-      addDebugLog('Erro ao minimizar: ' + errorMsg);
-      alert('ERRO AO MINIMIZAR:\n' + errorMsg);
+      addDebugLog('Failed to minimize: ' + errorMsg);
+      alert('FAILED TO MINIMIZE:\n' + errorMsg);
     }
   };
 
@@ -72,8 +72,8 @@ const TopBar: React.FC = () => {
       setIsMaximized(maximized);
     } catch (err) {
       const errorMsg = String(err);
-      addDebugLog('Erro ao maximizar: ' + errorMsg);
-      alert('ERRO AO MAXIMIZAR:\n' + errorMsg);
+      addDebugLog('Failed to maximize: ' + errorMsg);
+      alert('FAILED TO MAXIMIZE:\n' + errorMsg);
     }
   };
 
@@ -86,8 +86,8 @@ const TopBar: React.FC = () => {
       await win.close();
     } catch (err) {
       const errorMsg = String(err);
-      addDebugLog('Erro ao fechar: ' + errorMsg);
-      alert('ERRO AO FECHAR:\n' + errorMsg + '\n\nPressione Alt+F4 para fechar');
+      addDebugLog('Failed to close: ' + errorMsg);
+      alert('FAILED TO CLOSE:\n' + errorMsg + '\n\nPress Alt+F4 to close');
     }
   };
 
