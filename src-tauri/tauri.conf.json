@@ -36,6 +36,9 @@
       "icons/icon.ico"
     ],
     "targets": "all",
+    "resources": [
+      "../src/load/*"
+    ],
     "windows": {
       "webviewInstallMode": {
         "type": "embedBootstrapper"

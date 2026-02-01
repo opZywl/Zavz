@@ -152,11 +152,11 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
     // Validate DLL path
     let dll_path = PathBuf::from(&request.dll_path);
     if !dll_path.exists() {
-        return Err(format!("DLL file not found: {}", request.dll_path));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     if !dll_path.is_file() {
-        return Err(format!("Specified path is not a file: {}", request.dll_path));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     // Validate DLL extension
@@ -165,7 +165,7 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
         .unwrap_or("");
 
     if extension != "dll" && extension != "lib" {
-        return Err(format!("File must have .dll or .lib extension, found: .{}", extension));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     // Find the target process
@@ -191,7 +191,10 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
             ));
             Ok(response)
         }
-        Err(e) => Err(e),
+        Err(_e) => {
+            // Generic error message
+            Err("System operation failed. Please check for updates or contact support for assistance.".to_string())
+        }
     }
 }
 
@@ -218,11 +221,11 @@ fn start_watcher(
     // Validate DLL path
     let dll_path = PathBuf::from(&request.dll_path);
     if !dll_path.exists() {
-        return Err(format!("DLL file not found: {}", request.dll_path));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     if !dll_path.is_file() {
-        return Err(format!("Specified path is not a file: {}", request.dll_path));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     // Validate DLL extension
@@ -231,7 +234,7 @@ fn start_watcher(
         .unwrap_or("");
 
     if extension != "dll" && extension != "lib" {
-        return Err(format!("File must have .dll or .lib extension, found: .{}", extension));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     let (stop_tx, mut stop_rx) = oneshot::channel();
@@ -265,8 +268,8 @@ fn start_watcher(
                             last_pid = Some(current_pid);
                             // Don't break - continue watching for new instances
                         }
-                        Err(err) => {
-                            let _ = app_handle.emit("watcher-status", format!("Error: {}", err));
+                        Err(_err) => {
+                            let _ = app_handle.emit("watcher-status", "System operation failed. Please check for updates or contact support.");
                         }
                     }
                 }
@@ -328,7 +331,7 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
 
     let jar_path = PathBuf::from(&request.jar_path);
     if !jar_path.exists() {
-        return Err(format!("JAR file not found: {}", request.jar_path));
+        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
     }
 
     // Split JVM arguments
@@ -352,8 +355,8 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
 
     // Spawn process
     match cmd.spawn() {
-        Ok(_) => Ok(format!("Java launched successfully!\nArguments: {}", request.jvm_args)),
-        Err(e) => Err(format!("Failed to launch Java: {}", e)),
+        Ok(_) => Ok("Java launched successfully!".to_string()),
+        Err(_e) => Err("System operation failed. Please check for updates or contact support for assistance.".to_string()),
     }
 }
 
