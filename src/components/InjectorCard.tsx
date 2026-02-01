@@ -12,6 +12,7 @@ interface InjectorCardProps {
   handleInject: () => void;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
+  fdpMode?: boolean;
 }
 
 const InjectorCard: React.FC<InjectorCardProps> = ({
@@ -22,7 +23,8 @@ const InjectorCard: React.FC<InjectorCardProps> = ({
   setInjectionMethod,
   handleInject,
   handleFileSelect,
-  fileInputRef
+  fileInputRef,
+  fdpMode = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [processSelectorOpen, setProcessSelectorOpen] = useState(false);
@@ -67,39 +69,61 @@ const InjectorCard: React.FC<InjectorCardProps> = ({
 
         <div className="flex flex-col gap-6 relative z-10 h-full justify-center">
 
-            {/* File Selection Area */}
-            <input
-                type="file"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept=".dll,.lib"
-            />
-            <div
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`border border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-4 transition-all group cursor-pointer relative ${
-                  isDragging
-                    ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]/10'
-                    : 'border-[#272735] bg-[#0c0c10] hover:border-[var(--theme-primary)]/30 hover:bg-[#0e0e14]'
-                }`}
-            >
-                <div className="absolute inset-0 bg-[var(--theme-primary)]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
-                <div className="w-20 h-20 rounded-full bg-[#15151a] flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-zinc-800 shadow-xl group-hover:border-[var(--theme-primary)]/50 relative z-10">
+            {/* File Selection Area - Hidden when FDP Mode is active */}
+            {!fdpMode && (
+              <>
+                <input
+                    type="file"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept=".dll,.lib"
+                />
+                <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-4 transition-all group cursor-pointer relative ${
+                      isDragging
+                        ? 'border-[var(--theme-primary)] bg-[var(--theme-primary)]/10'
+                        : 'border-[#272735] bg-[#0c0c10] hover:border-[var(--theme-primary)]/30 hover:bg-[#0e0e14]'
+                    }`}
+                >
+                    <div className="absolute inset-0 bg-[var(--theme-primary)]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
+                    <div className="w-20 h-20 rounded-full bg-[#15151a] flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-zinc-800 shadow-xl group-hover:border-[var(--theme-primary)]/50 relative z-10">
+                        <FileCode size={32} className="text-[var(--theme-primary)]" />
+                    </div>
+                    <div className="text-center relative z-10">
+                        <h3 className="text-zinc-200 font-medium text-lg">Click to select DLL or Drag & Drop</h3>
+                        <p className="text-zinc-500 text-sm mt-1">Supported formats: .dll, .lib</p>
+                    </div>
+                    <div className="px-5 py-2.5 bg-[#15151a] rounded-lg border border-zinc-800 flex items-center gap-3 relative z-10 mt-2">
+                        <div className="w-2 h-2 rounded-full bg-[var(--theme-primary)] shadow-[0_0_8px_var(--theme-glow)] animate-pulse"></div>
+                        <span className="text-sm font-mono text-zinc-300">{dllPath}</span>
+                        <button className="text-zinc-600 hover:text-white transition-colors ml-2"><FolderOpen size={14}/></button>
+                    </div>
+                </div>
+              </>
+            )}
+
+            {/* FDP Mode Indicator */}
+            {fdpMode && (
+              <div className="border border-[var(--theme-primary)] rounded-xl p-10 flex flex-col items-center justify-center gap-4 bg-[var(--theme-primary)]/10 relative">
+                <div className="absolute inset-0 bg-[var(--theme-primary)]/5 rounded-xl"></div>
+                <div className="w-20 h-20 rounded-full bg-[#15151a] flex items-center justify-center border border-[var(--theme-primary)] shadow-xl relative z-10">
                     <FileCode size={32} className="text-[var(--theme-primary)]" />
                 </div>
                 <div className="text-center relative z-10">
-                    <h3 className="text-zinc-200 font-medium text-lg">Click to select DLL or Drag & Drop</h3>
-                    <p className="text-zinc-500 text-sm mt-1">Supported formats: .dll, .lib</p>
+                    <h3 className="text-zinc-200 font-medium text-lg">FDP Mode Active</h3>
+                    <p className="text-zinc-500 text-sm mt-1">Auto-loading native.dll from src/load</p>
                 </div>
-                <div className="px-5 py-2.5 bg-[#15151a] rounded-lg border border-zinc-800 flex items-center gap-3 relative z-10 mt-2">
-                    <div className="w-2 h-2 rounded-full bg-[var(--theme-primary)] shadow-[0_0_8px_var(--theme-glow)] animate-pulse"></div>
-                    <span className="text-sm font-mono text-zinc-300">{dllPath}</span>
-                    <button className="text-zinc-600 hover:text-white transition-colors ml-2"><FolderOpen size={14}/></button>
+                <div className="px-5 py-2.5 bg-[#15151a] rounded-lg border border-[var(--theme-primary)] flex items-center gap-3 relative z-10 mt-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></div>
+                    <span className="text-sm font-mono text-[var(--theme-light)]">{dllPath}</span>
                 </div>
-            </div>
+              </div>
+            )}
 
             {/* Target Config */}
             <div className="grid grid-cols-2 gap-4 mt-4">

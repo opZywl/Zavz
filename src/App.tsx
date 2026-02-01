@@ -61,6 +61,9 @@ const App = () => {
   const [loadFdpJar, setLoadFdpJar] = useState(false);
   const [clientWrapper, setClientWrapper] = useState<'Lunar' | 'Badlion'>('Lunar');
 
+  // FDP Mode - auto-load native.dll from src/load
+  const [fdpMode, setFdpMode] = useState(false);
+
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jarInputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +139,14 @@ const App = () => {
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  // Auto-set DLL path when FDP Mode is enabled
+  useEffect(() => {
+    if (fdpMode) {
+      setDllPath('src/load/native.dll');
+      addLog('FDP Mode enabled - loading native.dll automatically', 'system');
+    }
+  }, [fdpMode]);
 
   // --- Handlers ---
   const handleInject = async () => {
@@ -415,6 +426,8 @@ const App = () => {
                         handleInject={handleInject}
                         handleFileSelect={handleFileSelect}
                         fileInputRef={fileInputRef}
+                        fdpMode={fdpMode}
+                        setFdpMode={setFdpMode}
                         clientWrapper={clientWrapper}
                         handleClientWrapperChange={handleClientWrapperChange}
                         loadFdpJar={loadFdpJar}
