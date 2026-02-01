@@ -151,7 +151,8 @@ const InjectorCard: React.FC<InjectorCardProps> = ({
                     options={[
                         {value: 'Standard', label: 'Standard (LoadLibrary)'},
                         {value: 'Manual', label: 'Manual Map (Stealth)'},
-                        {value: 'Kernel', label: 'Kernel Injection (Ring0)'}
+                        {value: 'Thread Hijack', label: 'Thread Hijacking (Existing Thread)'},
+                        {value: 'Reflective', label: 'Reflective Loader (Self-Mapping)'}
                     ]} 
                     value={injectionMethod}
                     onChange={(val) => setInjectionMethod(val)}

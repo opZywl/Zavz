@@ -1,9 +1,11 @@
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
 use sysinfo::System;
 
 #[cfg(target_os = "windows")]
 use dll_syringe::{process::OwnedProcess, Syringe};
+
+use crate::injection_method::InjectionMethod;
 
 #[cfg(target_os = "windows")]
 use {
@@ -247,7 +249,7 @@ pub fn find_process_by_name(target: &str) -> Result<u32, String> {
 pub fn inject_dll(
     process: OwnedProcess,
     dll_path: &PathBuf,
-    use_manual_map: bool,
+    method: InjectionMethod,
 ) -> Result<(), String> {
     // Validate architecture
     #[cfg(target_os = "windows")]
@@ -259,24 +261,25 @@ pub fn inject_dll(
         let _ = set_access_control(dll_path, "S-1-15-2-1");
     }
 
-    // Try manual map if requested
-    if use_manual_map {
-        return crate::manual_map::manual_map_inject(&process, dll_path);
+    match method {
+        InjectionMethod::ManualMap => crate::manual_map::manual_map_inject(&process, dll_path),
+        InjectionMethod::ThreadHijack => crate::thread_hijack::thread_hijack_inject(&process, dll_path),
+        InjectionMethod::Reflective => crate::reflective::reflective_inject(&process, dll_path),
+        InjectionMethod::Standard => {
+            let syringe = Syringe::for_process(process);
+            syringe
+                .inject(dll_path)
+                .map(|_| ())
+                .map_err(|err| format!("Failed to inject DLL: {}", err))
+        }
     }
-
-    // Standard LoadLibrary injection
-    let syringe = Syringe::for_process(process);
-    syringe
-        .inject(dll_path)
-        .map(|_| ())
-        .map_err(|err| format!("Failed to inject DLL: {}", err))
 }
 
 #[cfg(not(target_os = "windows"))]
 pub fn inject_dll(
     _process: u32,
     _dll_path: &PathBuf,
-    _use_manual_map: bool,
+    _method: InjectionMethod,
 ) -> Result<(), String> {
     Err("DLL injection not supported on this platform".to_string())
 }
