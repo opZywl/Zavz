@@ -24,7 +24,11 @@ pub fn validate_dll_architecture(dll_path: &Path, process: &OwnedProcess) -> Res
     let process_is_64bit = is_process_64bit(process)?;
 
     if dll_is_64bit != process_is_64bit {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err(format!(
+            "Incompatibilidade de arquitetura: DLL é {}-bit mas o processo é {}-bit",
+            if dll_is_64bit { 64 } else { 32 },
+            if process_is_64bit { 64 } else { 32 }
+        ));
     }
 
     Ok(())
@@ -36,16 +40,16 @@ fn is_pe_64bit(path: &Path) -> Result<bool, String> {
     use std::io::{Read, Seek, SeekFrom};
 
     let mut file = fs::File::open(path)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to open DLL: {}", e))?;
 
     // Read DOS header
     let mut dos_header = [0u8; 64];
     file.read_exact(&mut dos_header)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to read DOS header: {}", e))?;
 
     // Check MZ signature
     if &dos_header[0..2] != b"MZ" {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("File is not a valid PE".to_string());
     }
 
     // Get PE header offset (at position 0x3C)
@@ -58,16 +62,16 @@ fn is_pe_64bit(path: &Path) -> Result<bool, String> {
 
     // Seek to PE header
     file.seek(SeekFrom::Start(pe_offset as u64))
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to seek PE header: {}", e))?;
 
     // Read PE signature and machine type
     let mut pe_header = [0u8; 6];
     file.read_exact(&mut pe_header)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to read PE header: {}", e))?;
 
     // Check PE signature
     if &pe_header[0..4] != b"PE\0\0" {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Invalid PE signature".to_string());
     }
 
     // Machine type at offset 4-5
@@ -87,7 +91,7 @@ fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
 
     unsafe {
         if IsWow64Process(handle, &mut is_wow64) == 0 {
-            return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+            return Err("Failed to check process architecture".to_string());
         }
     }
 
@@ -149,7 +153,7 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
         );
 
         if result != ERROR_SUCCESS {
-            return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+            return Err(format!("GetNamedSecurityInfoW falhou: {}", result));
         }
 
         let mut sid: PSID = ptr::null_mut();
@@ -157,14 +161,14 @@ pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), Stri
             if !sd.is_null() {
                 LocalFree(sd);
             }
-            return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+            return Err("ConvertStringSidToSidW falhou".to_string());
         }
 
         if sid.is_null() {
             if !sd.is_null() {
                 LocalFree(sd);
             }
-            return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+            return Err("SID conversion returned null".to_string());
         }
 
         let mut ea = EXPLICIT_ACCESS_W {
@@ -229,10 +233,10 @@ pub fn find_process_by_name(target: &str) -> Result<OwnedProcess, String> {
     let process = system
         .processes_by_name(target)
         .next()
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| format!("Process '{}' not found", target))?;
 
     OwnedProcess::from_pid(process.pid().as_u32())
-        .map_err(|_err| "System operation failed. Please check for updates or contact support for assistance.".to_string())
+        .map_err(|err| format!("Failed to open process: {}", err))
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -266,7 +270,7 @@ pub fn inject_dll(
             syringe
                 .inject(dll_path)
                 .map(|_| ())
-                .map_err(|_err| "System operation failed. Please check for updates or contact support for assistance.".to_string())
+                .map_err(|err| format!("Failed to inject DLL: {}", err))
         }
     }
 }
@@ -284,18 +288,18 @@ pub fn inject_dll(
 pub fn setup_fdp_jar(jar_path: &Path) -> Result<PathBuf, String> {
     // Get user home directory
     let home = dirs::home_dir()
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| "Failed to get home directory".to_string())?;
 
     let fdp_dir = home.join(".fdpclient");
 
     // Create .fdpclient directory if it doesn't exist
     fs::create_dir_all(&fdp_dir)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to create .fdpclient folder: {}", e))?;
 
     // Get JAR filename
     let jar_filename = jar_path
         .file_name()
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| "Invalid JAR filename".to_string())?;
 
     let dest_path = fdp_dir.join(jar_filename);
 
@@ -306,7 +310,7 @@ pub fn setup_fdp_jar(jar_path: &Path) -> Result<PathBuf, String> {
 
     // Copy JAR to .fdpclient
     fs::copy(jar_path, &dest_path)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to copy JAR: {}", e))?;
 
     Ok(dest_path)
 }

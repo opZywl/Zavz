@@ -139,25 +139,25 @@ const IMAGE_DIRECTORY_ENTRY_EXPORT: usize = 0;
 #[cfg(target_os = "windows")]
 fn get_nt_headers(dll_data: &[u8]) -> Result<(usize, &ImageNtHeaders64), String> {
     if dll_data.len() < std::mem::size_of::<ImageDosHeader>() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Invalid DLL file: too small".to_string());
     }
 
     let dos_header = unsafe { &*(dll_data.as_ptr() as *const ImageDosHeader) };
     if dos_header.e_magic != IMAGE_DOS_SIGNATURE {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Invalid DLL file: bad DOS signature".to_string());
     }
 
     let nt_offset = dos_header.e_lfanew as usize;
     if nt_offset + std::mem::size_of::<ImageNtHeaders64>() > dll_data.len() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Invalid DLL file: NT headers out of bounds".to_string());
     }
 
     let nt_headers = unsafe { &*(dll_data.as_ptr().add(nt_offset) as *const ImageNtHeaders64) };
     if nt_headers.signature != IMAGE_NT_SIGNATURE {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Invalid DLL file: bad NT signature".to_string());
     }
     if nt_headers.optional_header.magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Only 64-bit reflective DLLs are supported".to_string());
     }
 
     Ok((nt_offset, nt_headers))
@@ -176,7 +176,7 @@ fn get_section_headers<'a>(
     let section_size = std::mem::size_of::<ImageSectionHeader>()
         * nt_headers.file_header.number_of_sections as usize;
     if section_offset + section_size > dll_data.len() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Invalid DLL file: section headers out of bounds".to_string());
     }
 
     Ok(unsafe {
@@ -208,29 +208,29 @@ fn find_export_rva(
 ) -> Result<u32, String> {
     let export_dir = nt_headers.optional_header.data_directory[IMAGE_DIRECTORY_ENTRY_EXPORT];
     if export_dir.virtual_address == 0 || export_dir.size == 0 {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("DLL does not export any functions".to_string());
     }
 
     let export_offset = rva_to_offset(export_dir.virtual_address, sections)
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| "Invalid export directory RVA".to_string())?;
     if export_offset + std::mem::size_of::<ImageExportDirectory>() > dll_data.len() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Export directory out of bounds".to_string());
     }
 
     let export = unsafe { &*(dll_data.as_ptr().add(export_offset) as *const ImageExportDirectory) };
 
     let names_offset = rva_to_offset(export.address_of_names, sections)
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| "Invalid export names RVA".to_string())?;
     let ordinals_offset = rva_to_offset(export.address_of_name_ordinals, sections)
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| "Invalid export ordinals RVA".to_string())?;
     let functions_offset = rva_to_offset(export.address_of_functions, sections)
-        .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .ok_or_else(|| "Invalid export functions RVA".to_string())?;
 
     for i in 0..export.number_of_names as usize {
         let name_rva_offset = names_offset + i * 4;
         let ordinal_offset = ordinals_offset + i * 2;
         if name_rva_offset + 4 > dll_data.len() || ordinal_offset + 2 > dll_data.len() {
-            return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+            return Err("Export table out of bounds".to_string());
         }
 
         let name_rva = u32::from_le_bytes(
@@ -239,13 +239,13 @@ fn find_export_rva(
                 .unwrap(),
         );
         let name_offset = rva_to_offset(name_rva, sections)
-            .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+            .ok_or_else(|| "Invalid export name RVA".to_string())?;
         let name_end = dll_data[name_offset..]
             .iter()
             .position(|&c| c == 0)
-            .ok_or_else(|| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+            .ok_or_else(|| "Invalid export name".to_string())?;
         let name = std::str::from_utf8(&dll_data[name_offset..name_offset + name_end])
-            .map_err(|_| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+            .map_err(|_| "Invalid export name encoding".to_string())?;
 
         if name == export_name {
             let ordinal = u16::from_le_bytes(
@@ -254,12 +254,12 @@ fn find_export_rva(
                     .unwrap(),
             ) as u32;
             if ordinal as u32 >= export.number_of_functions {
-                return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+                return Err("Export ordinal out of range".to_string());
             }
 
             let func_rva_offset = functions_offset + ordinal as usize * 4;
             if func_rva_offset + 4 > dll_data.len() {
-                return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+                return Err("Export function RVA out of bounds".to_string());
             }
 
             let func_rva = u32::from_le_bytes(
@@ -271,7 +271,7 @@ fn find_export_rva(
         }
     }
 
-    Err("System operation failed. Please check for updates or contact support for assistance.".to_string())
+    Err("ReflectiveLoader export not found".to_string())
 }
 
 #[cfg(target_os = "windows")]
@@ -288,7 +288,7 @@ fn write_remote_memory(process: HANDLE, remote: *mut c_void, data: &[u8]) -> Res
     };
 
     if result == 0 || written != data.len() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Failed to write to remote process memory".to_string());
     }
 
     Ok(())
@@ -297,11 +297,11 @@ fn write_remote_memory(process: HANDLE, remote: *mut c_void, data: &[u8]) -> Res
 #[cfg(target_os = "windows")]
 pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), String> {
     let mut file = File::open(dll_path)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to open DLL file: {}", e))?;
 
     let mut dll_data = Vec::new();
     file.read_to_end(&mut dll_data)
-        .map_err(|_e| "System operation failed. Please check for updates or contact support for assistance.".to_string())?;
+        .map_err(|e| format!("Failed to read DLL file: {}", e))?;
 
     let (nt_offset, nt_headers) = get_nt_headers(&dll_data)?;
     let sections = get_section_headers(&dll_data, nt_offset, nt_headers)?;
@@ -319,7 +319,7 @@ pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     };
 
     if remote_base.is_null() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Failed to allocate remote memory for reflective DLL".to_string());
     }
 
     write_remote_memory(process_handle, remote_base, &dll_data)?;
@@ -337,7 +337,7 @@ pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     };
 
     if thread == std::ptr::null_mut() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err("Failed to create remote thread for ReflectiveLoader".to_string());
     }
 
     unsafe { WaitForSingleObject(thread, INFINITE) };
