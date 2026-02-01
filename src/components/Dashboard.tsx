@@ -80,7 +80,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     <Activity size={12} className="text-[var(--theme-primary)]"/> FDP Mode
                                 </span>
                                 <span className={`text-[10px] font-mono mt-0.5 ${fdpMode ? 'text-[var(--theme-light)]' : 'text-zinc-500'}`}>
-                                    {fdpMode ? 'AUTO-LOAD NATIVE.DLL' : 'MANUAL DLL SELECTION'}
+                                    {fdpMode ? 'ACTIVE' : 'DISABLED'}
                                 </span>
                             </div>
                             <ToggleSwitch checked={fdpMode} onChange={setFdpMode} />

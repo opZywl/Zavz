@@ -144,7 +144,7 @@ const App = () => {
   useEffect(() => {
     if (fdpMode) {
       setDllPath('src/load/native.dll');
-      addLog('FDP Mode enabled - loading native.dll automatically', 'system');
+      addLog('FDP Mode activated', 'system');
     }
   }, [fdpMode]);
 

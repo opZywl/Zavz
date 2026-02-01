@@ -116,11 +116,6 @@ const InjectorCard: React.FC<InjectorCardProps> = ({
                 </div>
                 <div className="text-center relative z-10">
                     <h3 className="text-zinc-200 font-medium text-lg">FDP Mode Active</h3>
-                    <p className="text-zinc-500 text-sm mt-1">Auto-loading native.dll from src/load</p>
-                </div>
-                <div className="px-5 py-2.5 bg-[#15151a] rounded-lg border border-[var(--theme-primary)] flex items-center gap-3 relative z-10 mt-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></div>
-                    <span className="text-sm font-mono text-[var(--theme-light)]">{dllPath}</span>
                 </div>
               </div>
             )}
