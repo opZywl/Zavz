@@ -7,8 +7,6 @@ use dll_syringe::process::{OwnedProcess, Process};
 #[cfg(target_os = "windows")]
 use std::ffi::{c_void, CStr, CString};
 #[cfg(target_os = "windows")]
-use std::ffi::{c_void, CStr, CString};
-#[cfg(target_os = "windows")]
 use std::fs::File;
 #[cfg(target_os = "windows")]
 use std::io::Read;

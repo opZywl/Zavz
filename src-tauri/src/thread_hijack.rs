@@ -10,7 +10,9 @@ use std::path::Path;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::System::Diagnostics::Debug::WriteProcessMemory;
+use windows_sys::Win32::System::Diagnostics::Debug::{
+    GetThreadContext, SetThreadContext, WriteProcessMemory, CONTEXT, CONTEXT_CONTROL_AMD64,
+};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Module32FirstW, Module32NextW, Thread32First, Thread32Next,
@@ -24,8 +26,8 @@ use windows_sys::Win32::System::Memory::{
 };
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::{
-    GetThreadContext, OpenThread, ResumeThread, SetThreadContext, SuspendThread, CONTEXT,
-    CONTEXT_CONTROL, THREAD_GET_CONTEXT, THREAD_SET_CONTEXT, THREAD_SUSPEND_RESUME,
+    OpenThread, ResumeThread, SuspendThread, THREAD_GET_CONTEXT, THREAD_SET_CONTEXT,
+    THREAD_SUSPEND_RESUME,
 };
 
 #[cfg(target_os = "windows")]
@@ -145,7 +147,7 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     }
 
     let mut context: CONTEXT = unsafe { std::mem::zeroed() };
-    context.ContextFlags = CONTEXT_CONTROL;
+    context.ContextFlags = CONTEXT_CONTROL_AMD64;
 
     let got_context = unsafe { GetThreadContext(thread_handle, &mut context) } != 0;
     if !got_context {
