@@ -1,5 +1,5 @@
 #[cfg(target_os = "windows")]
-use dll_syringe::process::OwnedProcess;
+use dll_syringe::process::{OwnedProcess, Process};
 #[cfg(target_os = "windows")]
 use std::ffi::{c_void, CString};
 #[cfg(target_os = "windows")]
@@ -8,25 +8,13 @@ use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
 #[cfg(target_os = "windows")]
-use winapi::shared::minwindef::DWORD;
-#[cfg(target_os = "windows")]
-use winapi::um::processthreadsapi::{
-    GetThreadContext, OpenThread, ResumeThread, SetThreadContext, SuspendThread,
-};
-#[cfg(target_os = "windows")]
-use winapi::um::tlhelp32::{
-    CreateToolhelp32Snapshot, Thread32First, Thread32Next, THREADENTRY32, TH32CS_SNAPTHREAD,
-};
-#[cfg(target_os = "windows")]
-use winapi::um::winnt::{CONTEXT, CONTEXT_CONTROL, THREAD_GET_CONTEXT, THREAD_SET_CONTEXT, THREAD_SUSPEND_RESUME};
-
-#[cfg(target_os = "windows")]
-use windows_sys::Win32::Foundation::CloseHandle;
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Diagnostics::Debug::WriteProcessMemory;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-    Module32FirstW, Module32NextW, MODULEENTRY32W, TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32,
+    CreateToolhelp32Snapshot, Module32FirstW, Module32NextW, Thread32First, Thread32Next,
+    MODULEENTRY32W, THREADENTRY32, TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32, TH32CS_SNAPTHREAD,
 };
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
@@ -34,11 +22,16 @@ use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress
 use windows_sys::Win32::System::Memory::{
     VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PAGE_READWRITE,
 };
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::System::Threading::{
+    GetThreadContext, OpenThread, ResumeThread, SetThreadContext, SuspendThread, CONTEXT,
+    CONTEXT_CONTROL, THREAD_GET_CONTEXT, THREAD_SET_CONTEXT, THREAD_SUSPEND_RESUME,
+};
 
 #[cfg(target_os = "windows")]
-fn find_thread_id(pid: DWORD) -> Result<DWORD, String> {
+fn find_thread_id(pid: u32) -> Result<u32, String> {
     let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) };
-    if snapshot == winapi::um::handleapi::INVALID_HANDLE_VALUE {
+    if snapshot == INVALID_HANDLE_VALUE {
         return Err("Failed to create thread snapshot".to_string());
     }
 
@@ -50,20 +43,20 @@ fn find_thread_id(pid: DWORD) -> Result<DWORD, String> {
     let mut has_entry = unsafe { Thread32First(snapshot, &mut entry) } != 0;
     while has_entry {
         if entry.th32OwnerProcessID == pid {
-            unsafe { CloseHandle(snapshot as _) };
+            unsafe { CloseHandle(snapshot) };
             return Ok(entry.th32ThreadID);
         }
         has_entry = unsafe { Thread32Next(snapshot, &mut entry) } != 0;
     }
 
-    unsafe { CloseHandle(snapshot as _) };
+    unsafe { CloseHandle(snapshot) };
     Err("No thread found for target process".to_string())
 }
 
 #[cfg(target_os = "windows")]
 fn get_remote_module_base(pid: u32, module_name: &str) -> Result<u64, String> {
     let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid) };
-    if snapshot == 0 {
+    if snapshot == INVALID_HANDLE_VALUE {
         return Err("Failed to create module snapshot".to_string());
     }
 
@@ -146,8 +139,8 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     }
 
     let suspend_result = unsafe { SuspendThread(thread_handle) };
-    if suspend_result == DWORD::MAX {
-        unsafe { CloseHandle(thread_handle as _) };
+    if suspend_result == u32::MAX {
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to suspend target thread".to_string());
     }
 
@@ -157,7 +150,7 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     let got_context = unsafe { GetThreadContext(thread_handle, &mut context) } != 0;
     if !got_context {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to get thread context".to_string());
     }
 
@@ -167,11 +160,11 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     let dll_cstr = CString::new(dll_path_str)
         .map_err(|_| "DLL path contains null bytes".to_string())?;
 
-    let process_handle = process.as_raw_handle() as *mut c_void;
+    let process_handle = process.as_raw_handle() as HANDLE;
     let remote_string = unsafe {
         VirtualAllocEx(
             process_handle,
-            std::ptr::null(),
+            std::ptr::null_mut(),
             dll_cstr.as_bytes_with_nul().len(),
             MEM_COMMIT | MEM_RESERVE,
             PAGE_READWRITE,
@@ -179,7 +172,7 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     };
     if remote_string.is_null() {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to allocate remote memory for DLL path".to_string());
     }
 
@@ -196,34 +189,37 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
 
     if write_result == 0 {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to write DLL path into remote memory".to_string());
     }
 
-    let local_kernel32 = unsafe { GetModuleHandleA(b"kernel32.dll\0".as_ptr() as *const i8) };
-    if local_kernel32 == 0 {
+    let local_kernel32 = unsafe { GetModuleHandleA(b"kernel32.dll\0".as_ptr()) };
+    if local_kernel32.is_null() {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to get local kernel32 handle".to_string());
     }
 
-    let local_load_library = unsafe { GetProcAddress(local_kernel32, b"LoadLibraryA\0".as_ptr() as *const i8) };
-    if local_load_library.is_null() {
-        unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
-        return Err("Failed to get local LoadLibraryA address".to_string());
-    }
+    let local_load_library =
+        unsafe { GetProcAddress(local_kernel32, b"LoadLibraryA\0".as_ptr()) }
+            .ok_or_else(|| "Failed to get local LoadLibraryA address".to_string())?;
+
+    let local_load_library_ptr =
+        unsafe { std::mem::transmute::<_, *const c_void>(local_load_library) };
+    let local_kernel32_ptr = local_kernel32 as *const c_void;
+    let local_load_library_addr = local_load_library_ptr as usize;
+    let local_kernel32_addr = local_kernel32_ptr as usize;
 
     let remote_kernel32 = get_remote_module_base(pid, "kernel32.dll")?;
     let load_library_remote = remote_kernel32
-        + (local_load_library as usize - local_kernel32 as usize) as u64;
+        + (local_load_library_addr - local_kernel32_addr) as u64;
 
     let stub = build_hijack_stub(load_library_remote, remote_string as u64, context.Rip);
 
     let remote_stub = unsafe {
         VirtualAllocEx(
             process_handle,
-            std::ptr::null(),
+            std::ptr::null_mut(),
             stub.len(),
             MEM_COMMIT | MEM_RESERVE,
             PAGE_EXECUTE_READWRITE,
@@ -232,7 +228,7 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
 
     if remote_stub.is_null() {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to allocate remote memory for hijack stub".to_string());
     }
 
@@ -249,7 +245,7 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
 
     if stub_result == 0 {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to write hijack stub into remote memory".to_string());
     }
 
@@ -258,12 +254,12 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     let set_result = unsafe { SetThreadContext(thread_handle, &context) } != 0;
     if !set_result {
         unsafe { ResumeThread(thread_handle) };
-        unsafe { CloseHandle(thread_handle as _) };
+        unsafe { CloseHandle(thread_handle) };
         return Err("Failed to set thread context".to_string());
     }
 
     unsafe { ResumeThread(thread_handle) };
-    unsafe { CloseHandle(thread_handle as _) };
+    unsafe { CloseHandle(thread_handle) };
 
     Ok(())
 }

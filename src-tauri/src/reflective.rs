@@ -59,6 +59,7 @@ struct ImageFileHeader {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 struct ImageDataDirectory {
     virtual_address: u32,
     size: u32,
@@ -335,7 +336,7 @@ pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
         )
     };
 
-    if thread == 0 {
+    if thread == std::ptr::null_mut() {
         return Err("Failed to create remote thread for ReflectiveLoader".to_string());
     }
 

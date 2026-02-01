@@ -3,7 +3,9 @@
 // without using LoadLibrary, making it harder to detect by anti-cheat systems
 
 #[cfg(target_os = "windows")]
-use dll_syringe::process::OwnedProcess;
+use dll_syringe::process::{OwnedProcess, Process};
+#[cfg(target_os = "windows")]
+use std::ffi::{c_void, CStr, CString};
 #[cfg(target_os = "windows")]
 use std::ffi::{c_void, CStr, CString};
 #[cfg(target_os = "windows")]
@@ -15,7 +17,7 @@ use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory};
 #[cfg(target_os = "windows")]
@@ -78,6 +80,7 @@ struct ImageFileHeader {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 struct ImageDataDirectory {
     virtual_address: u32,
     size: u32,
@@ -272,8 +275,9 @@ fn read_remote_u64(process: HANDLE, remote: *const c_void) -> Result<u64, String
 
 #[cfg(target_os = "windows")]
 fn get_remote_module_base(pid: u32, module_name: &str) -> Result<u64, String> {
-    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid) };
-    if snapshot == 0 {
+    let snapshot =
+        unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid) };
+    if snapshot == INVALID_HANDLE_VALUE {
         return Err("Failed to create module snapshot".to_string());
     }
 
@@ -333,19 +337,26 @@ fn ensure_remote_module_loaded(
         module_cstr.as_bytes_with_nul(),
     )?;
 
-    let kernel32_local = unsafe { GetModuleHandleA(b"kernel32.dll\0".as_ptr() as *const i8) };
-    if kernel32_local == 0 {
+    let kernel32_local = unsafe { GetModuleHandleA(b"kernel32.dll\0".as_ptr()) };
+    if kernel32_local == std::ptr::null_mut() {
         return Err("Failed to get local kernel32 handle".to_string());
     }
 
-    let load_library_local = unsafe { GetProcAddress(kernel32_local, b"LoadLibraryA\0".as_ptr() as *const i8) };
-    if load_library_local.is_null() {
-        return Err("Failed to get local LoadLibraryA address".to_string());
-    }
+    let load_library_local =
+        unsafe { GetProcAddress(kernel32_local, b"LoadLibraryA\0".as_ptr()) }
+            .ok_or_else(|| "Failed to get local LoadLibraryA address".to_string())?;
+
+    let load_library_local_ptr =
+        unsafe { std::mem::transmute::<_, *const c_void>(load_library_local) };
+
+    let kernel32_local_ptr = kernel32_local as *const c_void;
+
+    let load_library_local_addr = load_library_local_ptr as usize;
+    let kernel32_local_addr = kernel32_local_ptr as usize;
 
     let kernel32_remote = get_remote_module_base(pid, "kernel32.dll")?;
     let load_library_remote = kernel32_remote
-        + (load_library_local as usize - kernel32_local as usize) as u64;
+        + (load_library_local_addr - kernel32_local_addr) as u64;
 
     let thread = unsafe {
         CreateRemoteThread(
@@ -359,7 +370,7 @@ fn ensure_remote_module_loaded(
         )
     };
 
-    if thread == 0 {
+    if thread == std::ptr::null_mut() {
         unsafe { VirtualFreeEx(process, remote_string, 0, MEM_RELEASE) };
         return Err("Failed to create remote thread for LoadLibraryA".to_string());
     }
@@ -407,10 +418,10 @@ fn resolve_imports(
 
         let remote_module_base = ensure_remote_module_loaded(process, pid, &module_name)?;
 
-        let module_cstr = CString::new(module_name.clone())
-            .map_err(|_| "Invalid import module name".to_string())?;
-        let local_module = unsafe { LoadLibraryA(module_cstr.as_ptr()) };
-        if local_module == 0 {
+        let module_cstr =
+            CString::new(module_name.clone()).map_err(|_| "Invalid import module name".to_string())?;
+        let local_module = unsafe { LoadLibraryA(module_cstr.as_ptr() as *const u8) };
+        if local_module == std::ptr::null_mut() {
             return Err(format!("Failed to load module locally: {}", module_name));
         }
 
@@ -441,9 +452,7 @@ fn resolve_imports(
 
             let function_address = if (thunk_value & IMAGE_ORDINAL_FLAG64) != 0 {
                 let ordinal = (thunk_value & 0xFFFF) as u16;
-                unsafe {
-                    GetProcAddress(local_module, ordinal as usize as *const i8)
-                }
+                unsafe { GetProcAddress(local_module, ordinal as usize as *const u8) }
             } else {
                 let name_rva = thunk_value as u32;
                 let name_offset = rva_to_offset(name_rva, sections)
@@ -452,16 +461,18 @@ fn resolve_imports(
                     return Err("Import name out of bounds".to_string());
                 }
                 let name = read_c_string(&dll_data[name_offset + 2..])?;
-                let name_cstr = CString::new(name)
-                    .map_err(|_| "Invalid import name".to_string())?;
-                unsafe { GetProcAddress(local_module, name_cstr.as_ptr()) }
+                let name_cstr =
+                    CString::new(name).map_err(|_| "Invalid import name".to_string())?;
+                unsafe { GetProcAddress(local_module, name_cstr.as_ptr() as *const u8) }
             };
 
-            if function_address.is_null() {
-                return Err(format!("Failed to resolve import in {}", module_name));
-            }
+            let function_address = function_address
+                .ok_or_else(|| format!("Failed to resolve import in {}", module_name))?;
 
-            let local_rva = function_address as usize - local_module as usize;
+            let function_address_ptr =
+                unsafe { std::mem::transmute::<_, *const c_void>(function_address) };
+            let local_module_ptr = local_module as *const c_void;
+            let local_rva = function_address_ptr as usize - local_module_ptr as usize;
             let remote_address = remote_module_base + local_rva as u64;
 
             let iat_address = remote_base + iat_rva as u64 + (index * 8) as u64;
@@ -486,7 +497,8 @@ fn read_c_string(data: &[u8]) -> Result<String, String> {
         .position(|&c| c == 0)
         .ok_or_else(|| "String terminator not found".to_string())?;
     let slice = &data[..end];
-    let cstr = CStr::from_bytes_with_nul(&[slice, &[0]].concat())
+    let owned = [slice, &[0]].concat();
+    let cstr = CStr::from_bytes_with_nul(&owned)
         .map_err(|_| "Invalid C string".to_string())?;
     cstr.to_str()
         .map(|s| s.to_string())
@@ -587,7 +599,7 @@ fn call_dll_main(process: HANDLE, remote_base: u64, entry_point_rva: u32) -> Res
         )
     };
 
-    if thread == 0 {
+    if thread == std::ptr::null_mut() {
         unsafe { VirtualFreeEx(process, remote_stub, 0, MEM_RELEASE) };
         return Err("Failed to create remote thread for DllMain".to_string());
     }
