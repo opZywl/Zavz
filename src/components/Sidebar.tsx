@@ -9,12 +9,17 @@ interface SidebarProps {
   setUpdateMenuOpen: (open: boolean) => void;
 }
 
+const openExternal = (url: string) => {
+  window.open(url, '_blank');
+};
+
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, updateMenuOpen, setUpdateMenuOpen }) => {
   return (
     <div className="w-64 bg-[#08080b] border-r border-[#1F1F2E] flex flex-col z-10 shadow-[5px_0_30px_rgba(0,0,0,0.5)]">
-        <div className="p-4 space-y-1">
-            <p className="px-3 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3 mt-2">Main Menu</p>
-            
+        {/* Main Menu - vertically centered */}
+        <div className="flex-1 flex flex-col justify-center p-4 space-y-1">
+            <p className="px-3 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3">Main Menu</p>
+
             {[
                 { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
                 { id: 'settings', icon: Settings, label: 'Settings' },
@@ -24,8 +29,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, updateMenuOp
                     key={item.id}
                     onClick={() => setActiveTab(item.id as Tab)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 group relative border-0 ${
-                        activeTab === item.id 
-                        ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] shadow-[inset_0_0_20px_rgba(0,0,0,0.2)]' 
+                        activeTab === item.id
+                        ? 'bg-[var(--theme-primary)]/10 text-[var(--theme-primary)] shadow-[inset_0_0_20px_rgba(0,0,0,0.2)]'
                         : 'text-zinc-500 hover:text-zinc-200 hover:bg-[#121215]'
                     }`}
                 >
@@ -37,9 +42,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, updateMenuOp
         </div>
 
         {/* Bottom Update Section */}
-        <div className="mt-auto p-4 border-t border-[#1F1F2E] bg-[#050508]/50">
+        <div className="p-4 border-t border-[#1F1F2E] bg-[#050508]/50">
             <div className="relative">
-                <button 
+                <button
                     onClick={() => setUpdateMenuOpen(!updateMenuOpen)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border border-zinc-800 bg-[#0f0f12] text-zinc-400 hover:text-white hover:border-zinc-700 transition-all ${updateMenuOpen ? 'border-[var(--theme-primary)] text-[var(--theme-primary)]' : ''}`}
                 >
@@ -49,20 +54,32 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, updateMenuOp
                     </div>
                     <ChevronUp size={14} className={`transition-transform duration-300 ${updateMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 {/* Expandable Menu */}
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${updateMenuOpen ? 'max-h-40 mt-2 opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="bg-[#0f0f12] border border-zinc-800 rounded-xl p-1 space-y-1">
-                        <button className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors">
+                        <button
+                            onClick={() => openExternal('https://github.com/opZywl/YZYInjector/releases/latest')}
+                            className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors"
+                        >
                             <Download size={12} /> Check Update
                         </button>
-                        <button className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors">
+                        <button
+                            onClick={() => openExternal('https://github.com/opZywl/YZYInjector/issues/new')}
+                            className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors"
+                        >
                             <Bug size={12} /> Report Issue
                         </button>
-                        <button className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors">
+                        <button
+                            onClick={() => openExternal('https://github.com/opZywl')}
+                            className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors"
+                        >
                             <User size={12} /> Creator
                         </button>
-                        <button className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors">
+                        <button
+                            onClick={() => openExternal('https://github.com/opZywl')}
+                            className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white flex items-center gap-2 transition-colors"
+                        >
                             <Github size={12} /> GitHub
                         </button>
                     </div>
