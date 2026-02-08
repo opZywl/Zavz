@@ -355,6 +355,7 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .manage(WatcherState::default())
         .setup(|app| {
             configure_window(app.handle())?;

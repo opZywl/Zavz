@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Folder, ExternalLink, ChevronDown, Check, Activity, Terminal, List, Play, Eye, MessageSquare, Power } from 'lucide-react';
+import { X, ChevronDown, Check, Activity, Terminal, List, Play, Eye, MessageSquare, Power } from 'lucide-react';
 import { ProcessSelectionModal } from './ProcessSelectionModal';
 
 interface SettingsModalProps {
@@ -130,25 +130,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <option value="Custom">Custom</option>
                         </select>
                         <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-                </div>
-
-                {/* Data Location */}
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-200">Data Location</label>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            defaultValue="C:\Users\yzy\AppData\Roaming\CCBlueX\LiquidLauncher"
-                            className="flex-1 bg-[#18181b] border border-white/10 rounded-md px-3 py-2 text-sm text-gray-400 focus:outline-none font-mono truncate"
-                            readOnly
-                        />
-                        <button className="text-gray-400 hover:text-white">
-                            <Folder size={20} />
-                        </button>
-                         <button className="text-gray-400 hover:text-white">
-                            <ExternalLink size={20} />
-                        </button>
                     </div>
                 </div>
 
