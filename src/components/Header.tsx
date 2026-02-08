@@ -49,10 +49,10 @@ export const Header: React.FC<HeaderProps> = ({ nickname, onOpenSettings, onDrag
         >
           <div className="w-9 h-9 bg-[#3e2723] rounded-md overflow-hidden border-2 border-[#18181b] shadow-sm group-hover:border-[var(--accent-600)] transition-colors">
              <img
-               src={`https://api.mineatar.io/face/${nickname}?scale=8`}
+               src={`https://mc-heads.net/avatar/${nickname}/64`}
                alt="Skin"
                className="w-full h-full object-cover"
-               onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.mineatar.io/face/c06f89064c8a49119c29ea1dbd1aab82?scale=8'; }}
+               onError={(e) => { (e.target as HTMLImageElement).src = 'https://mc-heads.net/avatar/MHF_Steve/64'; }}
              />
           </div>
           <div className="flex flex-col leading-tight flex-1">

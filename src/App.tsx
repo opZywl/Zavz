@@ -443,13 +443,13 @@ const App = () => {
         {/* Footer Bar */}
         <div className="px-10 h-[88px] flex items-center justify-end relative z-30 bg-[#09090b] border-t border-white/5">
              <div className="flex items-center bg-[#0e0e11] p-1.5 rounded-lg border border-white/5 shadow-lg">
-                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} label="GitHub" />
-                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} label="Discord" />
-                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" />
-                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" />
+                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} label="GitHub" link="https://github.com/opZywl" />
+                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} label="Discord" link="https://discord.gg/3XRFGeqEYD" />
+                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" link="https://fdpinfo.github.io/next/" />
+                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" link="https://www.youtube.com/@opZywl" />
 
                  <a
-                    href="https://zavzinjector.net"
+                    href="https://lucas-lima.vercel.app/"
                     className="relative flex items-center gap-2 pl-3 pr-4 py-1.5 ml-2 rounded-lg overflow-hidden group bg-[#18181b]"
                  >
                     <div className="absolute inset-0 bg-[var(--accent-600)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
@@ -457,7 +457,7 @@ const App = () => {
                         <div className="w-6 h-6 bg-[var(--accent-600)] group-hover:bg-white/20 rounded flex items-center justify-center transition-colors shadow-sm">
                             <ExternalLink size={14} className="text-white" />
                         </div>
-                        <span className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">zavzinjector.net</span>
+                        <span className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">lucas-lima.xyz</span>
                     </div>
                 </a>
              </div>
