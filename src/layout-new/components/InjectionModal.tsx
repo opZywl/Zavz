@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, FileCode, Zap, Upload, Cpu, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, FileCode, Zap, CheckCircle } from 'lucide-react';
 
 interface InjectionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onInject: () => Promise<void>;
+  dllPath: string;
+  setDllPath: (path: string) => void;
+  fdpMode: boolean;
+  setFdpMode: (mode: boolean) => void;
 }
 
 type Step = 'select' | 'manual' | 'injecting' | 'success';
 
-export const InjectionModal: React.FC<InjectionModalProps> = ({ isOpen, onClose }) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const InjectionModal: React.FC<InjectionModalProps> = ({ isOpen, onClose, onInject, dllPath, setDllPath, fdpMode, setFdpMode }) => {
   if (!isOpen) return null;
 
   const [step, setStep] = useState<Step>('select');
@@ -27,39 +33,55 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({ isOpen, onClose 
     }
   }, [isOpen]);
 
-  // Fake Injection Progress Logic
+  // Real injection with progress animation
   useEffect(() => {
     if (step === 'injecting') {
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setTimeout(() => setStep('success'), 800);
-            return 100;
+      let cancelled = false;
+
+      const runInjection = async () => {
+        // Animate progress while real injection runs
+        const progressInterval = setInterval(() => {
+          setProgress((prev) => {
+            if (prev >= 90) return 90; // Hold at 90% until real injection completes
+            const increment = Math.random() * 2 + 0.5;
+            const newProgress = prev + increment;
+            if (newProgress > 10 && newProgress < 30) setLogText('Scanning process memory...');
+            if (newProgress > 30 && newProgress < 50) setLogText('Allocating memory space...');
+            if (newProgress > 50 && newProgress < 70) setLogText('Writing payload...');
+            if (newProgress > 70) setLogText('Hijacking threads...');
+            return Math.min(newProgress, 90);
+          });
+        }, 50);
+
+        try {
+          await onInject();
+          clearInterval(progressInterval);
+          if (!cancelled) {
+            setProgress(100);
+            setLogText('Finalizing injection...');
+            setTimeout(() => { if (!cancelled) setStep('success'); }, 800);
           }
-          
-          // Simulation logic
-          const increment = Math.random() * 2 + 0.5;
-          const newProgress = prev + increment;
+        } catch {
+          clearInterval(progressInterval);
+          if (!cancelled) {
+            setLogText('Injection failed!');
+            setTimeout(() => { if (!cancelled) setStep('select'); }, 2000);
+          }
+        }
+      };
 
-          // Log updates based on progress
-          if (newProgress > 10 && newProgress < 30) setLogText('Scanning process memory...');
-          if (newProgress > 30 && newProgress < 50) setLogText('Allocating memory space...');
-          if (newProgress > 50 && newProgress < 70) setLogText('Writing payload...');
-          if (newProgress > 70 && newProgress < 90) setLogText('Hijacking threads...');
-          if (newProgress > 90) setLogText('Finalizing injection...');
-
-          return Math.min(newProgress, 100);
-        });
-      }, 50);
-
-      return () => clearInterval(interval);
+      runInjection();
+      return () => { cancelled = true; };
     }
   }, [step]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      // Set real DLL path for injection
+      const filePath = (file as any).path || file.name;
+      setDllPath(filePath);
     }
   };
 
@@ -116,8 +138,8 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({ isOpen, onClose 
                     </button>
 
                     {/* FDP Mode */}
-                    <button 
-                        onClick={() => setStep('injecting')}
+                    <button
+                        onClick={() => { setFdpMode(true); setStep('injecting'); }}
                         className="group relative bg-[#18181b] hover:bg-[#202023] rounded-xl p-6 flex flex-col items-center justify-center gap-4 border border-white/5 hover:border-[var(--accent-500)] transition-all duration-300"
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-500)]/0 to-[var(--accent-500)]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none"></div>

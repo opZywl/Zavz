@@ -4,17 +4,22 @@ import { X, File, Folder, Save, Download, ExternalLink } from 'lucide-react';
 interface VersionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  fdpPath: string;
+  setFdpPath: (path: string) => void;
 }
 
-export const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) => {
-  const [filePath, setFilePath] = useState('C:\\Users\\Zywl\\AppData\\Roaming\\.minecraft\\mods\\1.8.9\\LiquidBounce.jar');
+export const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose, fdpPath, setFdpPath }) => {
+  const [filePath, setFilePath] = useState(fdpPath || 'release.jar');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0]) {
-          setFilePath(e.target.files[0].name); // In a real browser env we can't get full path due to security, showing name for demo
+          const file = e.target.files[0];
+          const path = (file as any).path || file.name;
+          setFilePath(path);
+          setFdpPath(path);
       }
   };
 
@@ -73,10 +78,10 @@ export const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) =
                 
                 <div className="flex gap-3">
                     <div className="flex-1 relative group">
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={filePath}
-                            onChange={(e) => setFilePath(e.target.value)}
+                            onChange={(e) => { setFilePath(e.target.value); }}
                             placeholder="C:\Users\Zywl\AppData\Roaming\.minecraft\..."
                             className="w-full bg-[#0a0a0c]/60 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-gray-200 focus:outline-none focus:border-[var(--accent-500)] focus:ring-1 focus:ring-[var(--accent-500-30)] transition-all placeholder:text-gray-600"
                         />
@@ -122,8 +127,8 @@ export const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose }) =
              >
                  Cancel
              </button>
-             <button 
-                 onClick={onClose}
+             <button
+                 onClick={() => { setFdpPath(filePath); onClose(); }}
                  className="px-8 py-2.5 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white text-xs font-bold rounded-lg shadow-[0_4px_20px_var(--accent-shadow)] hover:shadow-[0_6px_24px_var(--accent-shadow)] transition-all transform active:scale-[0.98] uppercase tracking-wide flex items-center gap-2"
              >
                  <Save size={14} />

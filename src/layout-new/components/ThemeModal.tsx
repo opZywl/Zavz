@@ -1,13 +1,16 @@
 import React from 'react';
 import { Palette, X, Check, Sliders, Droplet } from 'lucide-react';
-import { ThemeColor } from '../App';
+
+export interface ThemeColors {
+  [key: number]: string;
+}
 
 interface ThemeModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTheme: string;
   setTheme: (theme: string) => void;
-  themes: Record<string, ThemeColor>;
+  themes: Record<string, ThemeColors>;
   customHex: string;
   setCustomHex: (hex: string) => void;
   isCustom: boolean;

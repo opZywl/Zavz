@@ -1,6 +1,15 @@
 import React from 'react';
-import { NewsItem } from '../types';
-import { Shield, Palette, Globe, Zap, ArrowRight, Fingerprint, Cloud, Layout } from 'lucide-react';
+import { Shield, Palette, Globe, Zap, Fingerprint, Layout } from 'lucide-react';
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
+  imageUrl?: string;
+  linkText: string;
+}
 
 interface NewsCardProps {
   item: NewsItem;
@@ -33,7 +42,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
   return (
     <div 
       className="group relative w-full h-full min-h-[180px] rounded-xl overflow-hidden bg-[#18181b] border border-white/5 hover:border-[var(--accent-500)] transition-all duration-300 cursor-pointer shadow-lg hover:shadow-[0_0_20px_var(--accent-shadow-light)]"
-      onClick={(e) => {
+      onClick={() => {
         if (onAction) {
             onAction(item);
         }

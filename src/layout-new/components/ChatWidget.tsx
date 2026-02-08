@@ -1,7 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot } from 'lucide-react';
-import { generateSupportResponse } from '../services/geminiService';
-import { ChatMessage } from '../types';
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  timestamp: Date;
+}
+
+// Simple local response generator (no external API dependency)
+const generateSupportResponse = async (input: string, _context: string): Promise<string> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  const lower = input.toLowerCase();
+  if (lower.includes('inject')) return 'To inject, click the "Inject Now" button on the dashboard. Make sure your target process is running.';
+  if (lower.includes('fdp') || lower.includes('mode')) return 'FDP Mode auto-configures the optimal injection settings. Select it from the injection modal.';
+  if (lower.includes('error') || lower.includes('fail')) return 'Check that the target process is running and the DLL path is correct. Try switching injection methods.';
+  if (lower.includes('theme') || lower.includes('color')) return 'You can customize the theme from the "Customize Theme" link or the settings panel.';
+  if (lower.includes('process')) return 'Go to Settings > Preferences to change the target process, or use the Process Selector.';
+  return 'I can help with injection, settings, themes, and troubleshooting. What would you like to know?';
+};
 
 export const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
