@@ -133,9 +133,21 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 bg-[#0a0a0c] px-3 py-1.5 rounded-lg border border-white/10 w-full">
-                            <div className="w-4 h-4 rounded-full" style={{ background: activeColor }}></div>
-                            <span className="text-xs font-mono text-gray-300 uppercase flex-1 text-center">{activeColor}</span>
-                            <Droplet size={12} className="text-gray-500" />
+                            <div className="w-4 h-4 rounded-full shrink-0" style={{ background: activeColor }}></div>
+                            <input
+                                type="text"
+                                value={activeColor}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (/^#[0-9a-fA-F]{0,6}$/.test(val)) {
+                                        setIsCustom(true);
+                                        setCustomHex(val);
+                                    }
+                                }}
+                                maxLength={7}
+                                className="text-xs font-mono text-gray-300 uppercase flex-1 text-center bg-transparent focus:outline-none focus:text-white"
+                            />
+                            <Droplet size={12} className="text-gray-500 shrink-0" />
                         </div>
 
                      </div>

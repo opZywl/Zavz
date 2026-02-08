@@ -9,6 +9,7 @@ import { UpdateCard } from './components/UpdateCard';
 import { InjectorIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
 import { NicknameModal } from './components/NicknameModal';
 import { ExternalLink, ChevronDown } from 'lucide-react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { ThemeModal } from './components/ThemeModal';
 import { VersionModal } from './components/VersionModal';
 import { ClientSelectionModal } from './components/ClientSelectionModal';
@@ -96,9 +97,9 @@ const defaultThemes: Record<string, ThemeColor> = {
     shadow: 'rgba(37, 99, 235, 0.4)'
   },
   purple: {
-    100: '#f3e8ff', 400: '#c084fc', 500: '#a855f7',
-    600: '#9333ea', 700: '#7e22ce', 900: '#581c87',
-    shadow: 'rgba(147, 51, 234, 0.4)'
+    100: '#f0ccff', 400: '#d633ff', 500: '#c500ff',
+    600: '#a600d6', 700: '#8200a8', 900: '#4a0061',
+    shadow: 'rgba(197, 0, 255, 0.4)'
   },
   green: {
     100: '#dcfce7', 400: '#4ade80', 500: '#22c55e',
@@ -124,6 +125,11 @@ const defaultThemes: Record<string, ThemeColor> = {
     100: '#fef9c3', 400: '#facc15', 500: '#eab308',
     600: '#ca8a04', 700: '#a16207', 900: '#713f12',
     shadow: 'rgba(234, 179, 8, 0.4)'
+  },
+  black: {
+    100: '#d4d4d8', 400: '#71717a', 500: '#3f3f46',
+    600: '#27272a', 700: '#18181b', 900: '#09090b',
+    shadow: 'rgba(63, 63, 70, 0.4)'
   },
   gradient: {
     100: '#ffe4e6', 400: '#f43f5e', 500: '#e11d48',
@@ -172,10 +178,10 @@ const newsItems: NewsItem[] = [
   }
 ];
 
-// ---- Social Link Component with Tooltip ----
+// ---- Social Link Component with Tooltip (opens in system browser) ----
 const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: string, link?: string }) => (
-    <a
-        href={link || "#"}
+    <button
+        onClick={() => { if (link) openUrl(link).catch(() => window.open(link, '_blank')); }}
         className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[var(--accent-400)] transition-colors relative group"
     >
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[var(--accent-500)] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none transform translate-y-2 group-hover:translate-y-0 whitespace-nowrap shadow-lg z-50">
@@ -183,7 +189,7 @@ const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: strin
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--accent-500)] rotate-45"></div>
         </div>
         {icon}
-    </a>
+    </button>
 );
 
 // ---- Main Component ----
@@ -197,8 +203,8 @@ const App = () => {
   };
 
   // Theme state
-  const [currentThemeKey, setCurrentThemeKey] = useState<string>('red');
-  const [customHex, setCustomHex] = useState<string>('#ef4444');
+  const [currentThemeKey, setCurrentThemeKey] = useState<string>('purple');
+  const [customHex, setCustomHex] = useState<string>('#c500ff');
   const [isCustom, setIsCustom] = useState(false);
 
   // Modal state
@@ -351,7 +357,7 @@ const App = () => {
 
   // ---- News Actions ----
   const handleNewsAction = (item: NewsItem) => {
-    if (item.url) { window.open(item.url, '_blank'); return; }
+    if (item.url) { openUrl(item.url).catch(() => window.open(item.url, '_blank')); return; }
     if (item.category === 'Interface') setIsThemeModalOpen(true);
   };
 
@@ -448,8 +454,8 @@ const App = () => {
                  <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" link="https://fdpinfo.github.io/next/" />
                  <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" link="https://www.youtube.com/@opZywl" />
 
-                 <a
-                    href="https://lucas-lima.vercel.app/"
+                 <button
+                    onClick={() => openUrl('https://lucas-lima.vercel.app/').catch(() => window.open('https://lucas-lima.vercel.app/', '_blank'))}
                     className="relative flex items-center gap-2 pl-3 pr-4 py-1.5 ml-2 rounded-lg overflow-hidden group bg-[#18181b]"
                  >
                     <div className="absolute inset-0 bg-[var(--accent-600)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
@@ -459,7 +465,7 @@ const App = () => {
                         </div>
                         <span className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">lucas-lima.xyz</span>
                     </div>
-                </a>
+                </button>
              </div>
         </div>
 

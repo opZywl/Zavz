@@ -10,6 +10,7 @@ sysinfo = "0.30"
 dll-syringe = { version = "0.17", default-features = false, features = ["syringe"] }
 tokio = { version = "1.37", features = ["sync", "time"] }
 tauri = { version = "2.3", features = [] }
+tauri-plugin-opener = "2"
 dirs = "5.0"
 
 [target.'cfg(windows)'.dependencies]
