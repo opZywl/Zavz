@@ -9,6 +9,7 @@ export interface NewsItem {
   date: string;
   imageUrl?: string;
   linkText: string;
+  url?: string;
 }
 
 interface NewsCardProps {
