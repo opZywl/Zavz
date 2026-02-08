@@ -1,0 +1,80 @@
+{
+  "background": {
+    "path": "/img/card/color.jpg",
+    "overlay": true
+  },
+  "cards": [
+    {
+      "id": "1",
+      "category": "Client",
+      "title": "FDPCLIENT",
+      "description": "b16 released changelog. Check out the new features and improvements.",
+      "date": "10/11/2025",
+      "imageUrl": "/img/icon/social/fdp-logo.png",
+      "linkText": "Download",
+      "url": "https://fdpinfo.github.io/next/",
+      "enabled": true,
+      "position": 0
+    },
+    {
+      "id": "2",
+      "category": "Interface",
+      "title": "Interface Customization is Live",
+      "description": "Customize your injector experience with our new dynamic theming engine. Click to edit.",
+      "imageUrl": "/img/card/color.jpg",
+      "date": "24/10/2025",
+      "linkText": "Customize",
+      "url": "",
+      "enabled": true,
+      "position": 1
+    },
+    {
+      "id": "3",
+      "category": "Proxy",
+      "title": "",
+      "description": "",
+      "imageUrl": "",
+      "date": "",
+      "linkText": "Coming Soon",
+      "url": "",
+      "enabled": true,
+      "position": 2
+    },
+    {
+      "id": "4",
+      "category": "Website",
+      "title": "",
+      "description": "",
+      "imageUrl": "",
+      "date": "",
+      "linkText": "Coming Soon",
+      "url": "",
+      "enabled": true,
+      "position": 3
+    },
+    {
+      "id": "5",
+      "category": "Update",
+      "title": "",
+      "description": "",
+      "imageUrl": "",
+      "date": "",
+      "linkText": "Coming Soon",
+      "url": "",
+      "enabled": true,
+      "position": 4
+    },
+    {
+      "id": "6",
+      "category": "Script",
+      "title": "",
+      "description": "",
+      "imageUrl": "",
+      "date": "",
+      "linkText": "Coming Soon",
+      "url": "",
+      "enabled": true,
+      "position": 5
+    }
+  ]
+}
