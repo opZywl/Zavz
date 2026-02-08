@@ -370,12 +370,11 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
   }, [isDragging]);
 
   return (
-    <div style={appStyle} className="min-h-screen flex flex-col items-center justify-center text-white selection:bg-[var(--accent-500-30)] overflow-hidden relative font-sans transition-colors duration-500 bg-black">
+    <div style={appStyle} className="h-screen w-screen flex flex-col text-white selection:bg-[var(--accent-500-30)] overflow-hidden relative font-sans transition-colors duration-500">
 
-      {/* Main App Window */}
+      {/* Main App Window - fills entire screen */}
       <div
-        className="w-[1100px] h-[720px] bg-[#09090b] rounded-[24px] shadow-2xl flex flex-col relative overflow-hidden border border-white/5 z-10 backdrop-blur-sm cursor-default"
-        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        className="w-full h-full bg-[#09090b] flex flex-col relative overflow-hidden cursor-default"
         onMouseDown={handleMouseDown}
       >
 
