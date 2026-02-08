@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ChevronDown, Check, Activity, Terminal, List, Play, Eye, MessageSquare, Power } from 'lucide-react';
+import { X, ChevronDown, Check, Activity, Terminal, List, Play, Eye, MessageSquare, Power } from './Icons';
 import { ProcessSelectionModal } from './ProcessSelectionModal';
 
 interface SettingsModalProps {

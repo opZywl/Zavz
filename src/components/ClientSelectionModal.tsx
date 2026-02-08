@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save } from './Icons';
 
 interface ClientSelectionModalProps {
   isOpen: boolean;

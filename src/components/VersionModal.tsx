@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { X, File, Folder, Save, Download, ExternalLink } from 'lucide-react';
+import { X, Folder, Save, ExternalLink } from './Icons';
+import { Download, File } from 'lucide-react';
 import { openExternal } from '../utils/openExternal';
 
 interface VersionModalProps {
