@@ -7,12 +7,6 @@ interface Process {
   pid: number;
 }
 
-const FALLBACK_PROCESSES: Process[] = [
-  { name: 'javaw.exe', pid: 12450 },
-  { name: 'java.exe', pid: 8432 },
-  { name: 'minecraft.exe', pid: 15678 },
-];
-
 interface ProcessSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -23,18 +17,19 @@ export const ProcessSelectionModal: React.FC<ProcessSelectionModalProps> = ({ is
   if (!isOpen) return null;
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [processes, setProcesses] = useState<Process[]>(FALLBACK_PROCESSES);
+  const [processes, setProcesses] = useState<Process[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProcesses = async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await invoke<Process[]>('list_processes');
-      if (result && result.length > 0) {
-        setProcesses(result);
-      }
-    } catch {
-      // Keep fallback processes
+      setProcesses(result || []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setProcesses([]);
     }
     setLoading(false);
   };
@@ -90,6 +85,22 @@ export const ProcessSelectionModal: React.FC<ProcessSelectionModalProps> = ({ is
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            {loading && (
+                <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+                    <RefreshCw size={16} className="animate-spin mr-2" /> Loading processes...
+                </div>
+            )}
+            {!loading && error && (
+                <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm gap-2">
+                    <p className="text-red-400">{error}</p>
+                    <button onClick={fetchProcesses} className="text-[var(--accent-400)] hover:text-[var(--accent-500)] text-xs font-bold">Retry</button>
+                </div>
+            )}
+            {!loading && !error && filteredProcesses.length === 0 && (
+                <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+                    {searchTerm ? 'No processes match your search' : 'No processes found'}
+                </div>
+            )}
             {filteredProcesses.map((proc) => (
                 <button 
                     key={proc.pid}

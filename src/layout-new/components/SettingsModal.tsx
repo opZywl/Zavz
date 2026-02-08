@@ -201,9 +201,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                         Process Target
                     </label>
                     <div className="flex gap-2">
-                        <div className="flex-1 bg-[#0f0f11] border border-white/10 rounded-lg px-4 py-3 text-sm font-mono text-white flex items-center">
-                           {targetProcess}
-                        </div>
+                        <input
+                           type="text"
+                           value={targetProcess}
+                           onChange={(e) => setTargetProcess(e.target.value)}
+                           className="flex-1 bg-[#0f0f11] border border-white/10 rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-[var(--accent-500)] transition-colors"
+                           placeholder="javaw.exe"
+                        />
                         <button 
                             onClick={() => setIsProcessSelectorOpen(true)}
                             className="bg-[#18181b] hover:bg-[#27272a] border border-white/10 hover:border-[var(--accent-500)] text-[var(--accent-500)] w-12 rounded-lg flex items-center justify-center transition-all shadow-lg active:scale-95"
