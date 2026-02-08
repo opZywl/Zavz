@@ -23,7 +23,7 @@ const generateSupportResponse = async (input: string, _context: string): Promise
 export const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'model', text: 'Hello! Need help with ZAVZ Injector v2.1.0?', timestamp: new Date() }
+    { id: '1', role: 'model', text: 'Hello! Need help with ZAVZ Injector?', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ export const ChatWidget = () => {
     setInput('');
     setLoading(true);
 
-    const responseText = await generateSupportResponse(userMsg.text, "ZAVZ Injector v2.1.0, Red Theme, Updates");
+    const responseText = await generateSupportResponse(userMsg.text, "ZAVZ Injector, Custom Theme, Updates");
 
     const botMsg: ChatMessage = {
       id: (Date.now() + 1).toString(),

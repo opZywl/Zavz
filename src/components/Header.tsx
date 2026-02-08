@@ -63,15 +63,15 @@ export const Header: React.FC<HeaderProps> = ({ nickname, onOpenSettings, onDrag
 
         <button
           onClick={handleMinimize}
-          className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-white/10 hover:text-white transition-all duration-200"
         >
-          <Minus size={20} />
+          <Minus size={18} />
         </button>
         <button
           onClick={handleClose}
-          className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center text-gray-400 hover:bg-[var(--accent-600)] hover:text-white hover:border-[var(--accent-600)] transition-all"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-all duration-200"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
       </div>
     </div>

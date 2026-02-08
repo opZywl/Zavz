@@ -67,7 +67,7 @@ export const NicknameModal: React.FC<NicknameModalProps> = ({ onConfirm }) => {
         </button>
 
         {/* Version tag */}
-        <span className="text-gray-600 text-xs font-medium">v2.0.0</span>
+        <span className="text-gray-600 text-xs font-medium">ZAVZ Injector</span>
       </div>
     </div>
   );
