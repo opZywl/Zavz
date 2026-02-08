@@ -139,8 +139,8 @@ const defaultThemes: Record<string, ThemeColor> = {
   }
 };
 
-// ---- News Data ----
-const newsItems: NewsItem[] = [
+// ---- News Data (fallback, overridden by config/cards.json) ----
+const defaultNewsItems: NewsItem[] = [
   {
     id: '1', category: 'Client', title: 'FDPCLIENT', date: '10/11/2025',
     description: 'b16 released changelog. Check out the new features and improvements.',
@@ -153,30 +153,10 @@ const newsItems: NewsItem[] = [
     imageUrl: '/img/card/color.jpg',
     linkText: 'Customize'
   },
-  {
-    id: '3', category: 'Proxy', title: 'ZavzProxy Is Expanding', date: '24/10/2025',
-    description: '15 global locations and over 40k unique IPs used monthly!',
-    imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
-    linkText: 'Read more'
-  },
-  {
-    id: '4', category: 'Website', title: 'The New Zavz Website is Live!', date: '09/05/2025',
-    description: 'We finally gave the Zavz website a fresh new look. Hope you like it!',
-    imageUrl: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?q=80&w=800&auto=format&fit=crop',
-    linkText: 'Visit Site'
-  },
-  {
-    id: '5', category: 'Update', title: 'New Injection Method', date: '08/02/2026',
-    description: 'Added reflective loader support for enhanced stability on newer anti-cheats.',
-    imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop',
-    linkText: 'Read Changelog'
-  },
-  {
-    id: '6', category: 'Script', title: 'Bedwars Auto-Play', date: '07/02/2026',
-    description: 'Beta release of the automated bedwars script. Use at your own risk.',
-    imageUrl: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=800&auto=format&fit=crop',
-    linkText: 'Get Script'
-  }
+  { id: '3', category: 'Proxy', title: '', description: '', imageUrl: '', date: '', linkText: 'Coming Soon' },
+  { id: '4', category: 'Website', title: '', description: '', imageUrl: '', date: '', linkText: 'Coming Soon' },
+  { id: '5', category: 'Update', title: '', description: '', imageUrl: '', date: '', linkText: 'Coming Soon' },
+  { id: '6', category: 'Script', title: '', description: '', imageUrl: '', date: '', linkText: 'Coming Soon' }
 ];
 
 // ---- Social Link Component with Tooltip (opens in system browser) ----
@@ -206,13 +186,37 @@ const App = () => {
   // Remote config state (from injector.txt)
   const [appVersion, setAppVersion] = useState<string>('v1.0.0');
   const [showUpdateAlert, setShowUpdateAlert] = useState(false);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>(defaultNewsItems);
 
-  // Fetch remote config on mount
+  // Fetch remote config and card config on mount
   useEffect(() => {
     fetchInjectorConfig().then((config) => {
       setAppVersion(config.version);
       if (config.showUpdateAlert) setShowUpdateAlert(true);
     });
+
+    // Load cards from JSON config
+    fetch('/config/cards.json')
+      .then(res => res.json())
+      .then((data: { cards?: any[] }) => {
+        if (data.cards && Array.isArray(data.cards)) {
+          const items: NewsItem[] = data.cards
+            .filter((c: any) => c.enabled !== false)
+            .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+            .map((c: any) => ({
+              id: c.id,
+              category: c.category || '',
+              title: c.title || '',
+              description: c.description || '',
+              date: c.date || '',
+              imageUrl: c.imageUrl || '',
+              linkText: c.linkText || 'Coming Soon',
+              url: c.url || undefined,
+            }));
+          setNewsItems(items);
+        }
+      })
+      .catch(() => { /* use default items */ });
   }, []);
 
   // Theme state
@@ -412,24 +416,28 @@ const App = () => {
                </p>
             </div>
 
-            <div className="mt-auto space-y-4 mb-2">
-                 {/* Version Selectors */}
-                <div className="flex gap-4">
-                    <div onClick={() => setIsClientModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-3 flex flex-col items-center justify-center gap-2 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-28 group">
+            <div className="mt-auto space-y-2.5 mb-1">
+                 {/* Version Selectors - Compact LiquidLauncher style */}
+                <div className="flex gap-2.5">
+                    <div onClick={() => setIsClientModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-2 flex items-center gap-2.5 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-14 group">
                          <InjectorIcon />
-                         <span className="text-sm font-bold text-white mt-1 group-hover:text-[var(--accent-400)]">v1.0.0</span>
-                         <span className="text-[10px] text-gray-500">Injector</span>
+                         <div className="flex flex-col leading-tight">
+                           <span className="text-xs font-bold text-white group-hover:text-[var(--accent-400)]">Injector</span>
+                           <span className="text-[10px] text-gray-500">v1.0.0</span>
+                         </div>
                     </div>
-                    <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-3 flex flex-col items-center justify-center gap-2 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-28 group">
-                         <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-10 h-10 object-contain drop-shadow-lg" />
-                         <span className="text-sm font-bold text-white mt-1 group-hover:text-[var(--accent-400)]">.jar</span>
-                         <span className="text-[10px] text-gray-500">Minecraft</span>
+                    <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-2 flex items-center gap-2.5 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-14 group">
+                         <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-8 h-8 object-contain drop-shadow-lg" />
+                         <div className="flex flex-col leading-tight">
+                           <span className="text-xs font-bold text-white group-hover:text-[var(--accent-400)]">.jar</span>
+                           <span className="text-[10px] text-gray-500">Minecraft</span>
+                         </div>
                     </div>
                 </div>
 
                 <button
                   onClick={() => setIsInjectionModalOpen(true)}
-                  className="w-full h-14 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-black text-lg rounded-lg shadow-[0_4px_20px_var(--accent-shadow)] transition-all transform active:scale-[0.98] uppercase tracking-wide"
+                  className="w-full h-10 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold text-sm rounded-lg shadow-[0_4px_20px_var(--accent-shadow)] transition-all transform active:scale-[0.98] uppercase tracking-wide"
                 >
                    Launch Injector
                 </button>
