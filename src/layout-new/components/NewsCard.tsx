@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Palette, Globe, Zap, Fingerprint, Layout } from 'lucide-react';
+import { Shield, Palette, Globe, Zap, Fingerprint, Layout, Code, RefreshCw } from 'lucide-react';
 
 export interface NewsItem {
   id: string;
@@ -34,6 +34,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
       case 'Website':
       case 'Platform':
         return <Layout size={24} className="text-[var(--accent-400)]" />;
+      case 'Client':
+      case 'Update':
+        return <RefreshCw size={24} className="text-[var(--accent-400)]" />;
+      case 'Script':
+        return <Code size={24} className="text-[var(--accent-400)]" />;
       default:
         return <Shield size={24} className="text-[var(--accent-400)]" />;
     }
