@@ -1,55 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { resolveResource } from '@tauri-apps/api/path';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Header } from './components/Header';
 import { NewsCard } from './components/NewsCard';
-import { InjectionModal } from './components/InjectionModal';
+import { UpdateCard } from './components/UpdateCard';
+import { InjectorIcon, MinecraftIcon, ZIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
+import { ExternalLink, ChevronDown } from 'lucide-react';
+import { ThemeModal } from './components/ThemeModal';
+import { VersionModal } from './components/VersionModal';
 import { ClientSelectionModal } from './components/ClientSelectionModal';
 import { SettingsModal } from './components/SettingsModal';
-import { VersionModal } from './components/VersionModal';
-import { ThemeModal } from './components/ThemeModal';
-import { ZIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon, InjectorIcon, MinecraftIcon } from './components/Icons';
-import { ExternalLink, ChevronDown } from 'lucide-react';
+import { InjectionModal } from './components/InjectionModal';
 import type { LogType, LogEntry } from '../components/ui';
 
-// ---- Theme system ----
-const hexToRgba = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const darkenHex = (hex: string, amount: number): string => {
-  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount);
-  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount);
-  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-};
-
-const lightenHex = (hex: string, amount: number): string => {
-  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
-  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
-  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-};
-
-export interface ThemeColors {
-  [key: number]: string;
+// ---- Types ----
+export interface ThemeColor {
+    100: string;
+    400: string;
+    500: string;
+    600: string;
+    700: string;
+    900: string;
+    shadow: string;
 }
-
-const THEME_PRESETS: Record<string, ThemeColors> = {
-  red: { 400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
-  blue: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
-  purple: { 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9' },
-  emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857' },
-  amber: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' },
-  rose: { 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' },
-  cyan: { 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2', 700: '#0e7490' },
-  gradient: { 400: '#f87171', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c' },
-};
 
 export interface NewsItem {
   id: string;
@@ -59,96 +34,203 @@ export interface NewsItem {
   date: string;
   imageUrl?: string;
   linkText: string;
+  url?: string;
 }
 
-// News items matching the reference design
-const NEWS_ITEMS: NewsItem[] = [
+// ---- Theme Utilities ----
+const adjustColor = (hex: string, factor: number): string => {
+    let r = parseInt(hex.slice(1, 3), 16);
+    let g = parseInt(hex.slice(3, 5), 16);
+    let b = parseInt(hex.slice(5, 7), 16);
+    r = Math.min(255, Math.max(0, Math.round(r * factor)));
+    g = Math.min(255, Math.max(0, Math.round(g * factor)));
+    b = Math.min(255, Math.max(0, Math.round(b * factor)));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
+const hexToRgba = (hex: string, alpha: number) => {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 4) {
+        r = parseInt("0x" + hex[1] + hex[1]);
+        g = parseInt("0x" + hex[2] + hex[2]);
+        b = parseInt("0x" + hex[3] + hex[3]);
+    } else if (hex.length === 7) {
+        r = parseInt("0x" + hex[1] + hex[2]);
+        g = parseInt("0x" + hex[3] + hex[4]);
+        b = parseInt("0x" + hex[5] + hex[6]);
+    }
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const generateTheme = (baseColor: string): ThemeColor => {
+    return {
+        100: adjustColor(baseColor, 1.8),
+        400: adjustColor(baseColor, 1.2),
+        500: baseColor,
+        600: adjustColor(baseColor, 0.9),
+        700: adjustColor(baseColor, 0.7),
+        900: adjustColor(baseColor, 0.4),
+        shadow: hexToRgba(baseColor, 0.4)
+    };
+};
+
+// ---- Theme Presets ----
+const defaultThemes: Record<string, ThemeColor> = {
+  red: {
+    100: '#fee2e2', 400: '#f87171', 500: '#ef4444',
+    600: '#dc2626', 700: '#b91c1c', 900: '#7f1d1d',
+    shadow: 'rgba(220, 38, 38, 0.4)'
+  },
+  blue: {
+    100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6',
+    600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a',
+    shadow: 'rgba(37, 99, 235, 0.4)'
+  },
+  purple: {
+    100: '#f3e8ff', 400: '#c084fc', 500: '#a855f7',
+    600: '#9333ea', 700: '#7e22ce', 900: '#581c87',
+    shadow: 'rgba(147, 51, 234, 0.4)'
+  },
+  green: {
+    100: '#dcfce7', 400: '#4ade80', 500: '#22c55e',
+    600: '#16a34a', 700: '#15803d', 900: '#14532d',
+    shadow: 'rgba(22, 163, 74, 0.4)'
+  },
+  orange: {
+    100: '#ffedd5', 400: '#fb923c', 500: '#f97316',
+    600: '#ea580c', 700: '#c2410c', 900: '#7c2d12',
+    shadow: 'rgba(234, 88, 12, 0.4)'
+  },
+  pink: {
+    100: '#fce7f3', 400: '#f472b6', 500: '#ec4899',
+    600: '#db2777', 700: '#be185d', 900: '#831843',
+    shadow: 'rgba(236, 72, 153, 0.4)'
+  },
+  cyan: {
+    100: '#cffafe', 400: '#22d3ee', 500: '#06b6d4',
+    600: '#0891b2', 700: '#0e7490', 900: '#164e63',
+    shadow: 'rgba(6, 182, 212, 0.4)'
+  },
+  yellow: {
+    100: '#fef9c3', 400: '#facc15', 500: '#eab308',
+    600: '#ca8a04', 700: '#a16207', 900: '#713f12',
+    shadow: 'rgba(234, 179, 8, 0.4)'
+  },
+  gradient: {
+    100: '#ffe4e6', 400: '#f43f5e', 500: '#e11d48',
+    600: '#be123c', 700: '#9f1239', 900: '#881337',
+    shadow: 'rgba(225, 29, 72, 0.4)'
+  }
+};
+
+// ---- News Data ----
+const newsItems: NewsItem[] = [
   {
-    id: '1',
-    title: 'FDPCLIENT',
+    id: '1', category: 'Client', title: 'FDPCLIENT', date: '10/11/2025',
     description: 'b16 released changelog. Check out the new features and improvements.',
-    category: 'Client',
-    date: '18/11/2025',
-    imageUrl: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&h=300&fit=crop',
-    linkText: 'Download',
+    imageUrl: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=800&auto=format&fit=crop',
+    linkText: 'Download', url: 'https://fdpinfo.github.io/next/'
   },
   {
-    id: '2',
-    title: 'Interface Customization is Live',
+    id: '2', category: 'Interface', title: 'Interface Customization is Live', date: '24/10/2025',
     description: 'Customize your injector experience with our new dynamic theming engine. Click to edit.',
-    category: 'Interface',
-    date: '24/18/2025',
-    linkText: 'Customize',
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-efdeb6bf80d1?q=80&w=800&auto=format&fit=crop',
+    linkText: 'Customize'
   },
   {
-    id: '3',
-    title: 'ZavzProxy is Expanding',
+    id: '3', category: 'Proxy', title: 'ZavzProxy Is Expanding', date: '24/10/2025',
     description: '15 global locations and over 40k unique IPs used monthly!',
-    category: 'Proxy',
-    date: '24/18/2025',
-    linkText: 'Read more',
+    imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
+    linkText: 'Read more'
   },
   {
-    id: '4',
-    title: 'The New Zavz Website is Live!',
+    id: '4', category: 'Website', title: 'The New Zavz Website is Live!', date: '09/05/2025',
     description: 'We finally gave the Zavz website a fresh new look. Hope you like it!',
-    category: 'Website',
-    date: '09/05/2025',
-    imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=300&fit=crop',
-    linkText: 'Visit Site',
+    imageUrl: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?q=80&w=800&auto=format&fit=crop',
+    linkText: 'Visit Site'
   },
   {
-    id: '5',
-    title: 'New Injection Method',
-    description: 'Thread hijacking injection method now available for advanced users.',
-    category: 'Update',
-    date: '08/02/2026',
-    linkText: 'Learn More',
+    id: '5', category: 'Update', title: 'New Injection Method', date: '08/02/2026',
+    description: 'Added reflective loader support for enhanced stability on newer anti-cheats.',
+    imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop',
+    linkText: 'Read Changelog'
   },
   {
-    id: '6',
-    title: 'Bedwars Auto-Play',
-    description: 'New automation script for Bedwars gameplay with smart pathfinding.',
-    category: 'Script',
-    date: '07/02/2026',
-    imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=300&fit=crop',
-    linkText: 'Try Now',
-  },
+    id: '6', category: 'Script', title: 'Bedwars Auto-Play', date: '07/02/2026',
+    description: 'Beta release of the automated bedwars script. Use at your own risk.',
+    imageUrl: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=800&auto=format&fit=crop',
+    linkText: 'Get Script'
+  }
 ];
 
+// ---- Social Link Component with Tooltip ----
+const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: string, link?: string }) => (
+    <a
+        href={link || "#"}
+        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[var(--accent-400)] transition-colors relative group"
+    >
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[var(--accent-500)] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none transform translate-y-2 group-hover:translate-y-0 whitespace-nowrap shadow-lg z-50">
+            {label}
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--accent-500)] rotate-45"></div>
+        </div>
+        {icon}
+    </a>
+);
+
+// ---- Main Component ----
 interface NewLayoutAppProps {
   onSwitchLayout: () => void;
 }
 
 const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
-  // --- State ---
-  const [theme, setTheme] = useState('red');
-  const [customHex, setCustomHex] = useState('#ef4444');
-  const [isCustomTheme, setIsCustomTheme] = useState(false);
+  // Theme state
+  const [currentThemeKey, setCurrentThemeKey] = useState<string>('red');
+  const [customHex, setCustomHex] = useState<string>('#ef4444');
+  const [isCustom, setIsCustom] = useState(false);
 
-  // Injection state
+  // Modal state
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isInjectionModalOpen, setIsInjectionModalOpen] = useState(false);
+
+  // Dragging state (browser-based)
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
+  // Injection state (Tauri integration)
   const [targetProcess, setTargetProcess] = useState('javaw.exe');
   const [dllPath, setDllPath] = useState('native.dll');
   const [injectionMethod, setInjectionMethod] = useState('Standard');
   const [fdpMode, setFdpMode] = useState(false);
   const [fdpPath, setFdpPath] = useState('release.jar');
-
-  // Settings
   const [jvmArgs, setJvmArgs] = useState('-Xmx4G -XX:+UseG1GC -noverify');
   const [autoClose, setAutoClose] = useState(false);
   const [watcherActive, setWatcherActive] = useState(false);
-
-  // Logs
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  // Modals
-  const [injectionModalOpen, setInjectionModalOpen] = useState(false);
-  const [clientModalOpen, setClientModalOpen] = useState(false);
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [versionModalOpen, setVersionModalOpen] = useState(false);
-  const [themeModalOpen, setThemeModalOpen] = useState(false);
+  // ---- Theme computation ----
+  const activeTheme = useMemo(() => {
+    if (isCustom) return generateTheme(customHex);
+    return defaultThemes[currentThemeKey];
+  }, [currentThemeKey, customHex, isCustom]);
 
-  // --- Helpers ---
+  const appStyle = {
+    '--accent-100': activeTheme[100],
+    '--accent-400': activeTheme[400],
+    '--accent-500': activeTheme[500],
+    '--accent-600': activeTheme[600],
+    '--accent-700': activeTheme[700],
+    '--accent-900': activeTheme[900],
+    '--accent-shadow': activeTheme.shadow,
+    '--accent-shadow-light': hexToRgba(activeTheme[500], 0.2),
+    '--accent-500-30': hexToRgba(activeTheme[500], 0.3),
+    '--accent-500-20': hexToRgba(activeTheme[500], 0.2),
+  } as React.CSSProperties;
+
+  // ---- Helpers ----
   const addLog = (message: string, type: LogType = 'info') => {
     const now = new Date();
     const timeString = now.toLocaleTimeString('en-GB', { hour12: false });
@@ -156,34 +238,10 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
     setLogs(prev => [...prev, { id, time: timeString, message, type }]);
   };
 
-  const getActiveColor = () => {
-    if (isCustomTheme) return customHex;
-    return THEME_PRESETS[theme]?.[500] || '#ef4444';
-  };
-
-  // --- CSS Variables for accent system ---
-  const accentColor = getActiveColor();
-  const accentStyles = {
-    '--accent-400': isCustomTheme ? lightenHex(customHex, 30) : (THEME_PRESETS[theme]?.[400] || '#f87171'),
-    '--accent-500': accentColor,
-    '--accent-600': isCustomTheme ? darkenHex(customHex, 20) : (THEME_PRESETS[theme]?.[600] || '#dc2626'),
-    '--accent-700': isCustomTheme ? darkenHex(customHex, 40) : (THEME_PRESETS[theme]?.[700] || '#b91c1c'),
-    '--accent-100': lightenHex(accentColor, 80),
-    '--accent-shadow': hexToRgba(accentColor, 0.4),
-    '--accent-shadow-light': hexToRgba(accentColor, 0.15),
-    '--accent-500-20': hexToRgba(accentColor, 0.2),
-    '--accent-500-30': hexToRgba(accentColor, 0.3),
-    '--theme-primary': accentColor,
-    '--theme-hover': isCustomTheme ? darkenHex(customHex, 20) : (THEME_PRESETS[theme]?.[600] || '#dc2626'),
-    '--theme-light': isCustomTheme ? lightenHex(customHex, 30) : (THEME_PRESETS[theme]?.[400] || '#f87171'),
-    '--theme-glow': hexToRgba(accentColor, 0.5),
-  } as React.CSSProperties;
-
-  // --- Effects ---
+  // ---- Tauri Effects ----
   useEffect(() => {
     if (logs.length === 0) {
       addLog('YZY Injector v2 initialized', 'system');
-
       invoke<any>('get_settings')
         .then((settings) => {
           if (settings.jvmArgs) setJvmArgs(settings.jvmArgs);
@@ -202,7 +260,6 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
 
     const unlisten1 = listen<string>('watcher-status', (event) => { addLog(event.payload, 'system'); });
     const unlisten2 = listen<string>('injection-log', (event) => { addLog(event.payload, 'info'); });
-
     return () => {
       unlisten1.then(fn => fn());
       unlisten2.then(fn => fn());
@@ -217,18 +274,14 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
     }
   }, [fdpMode]);
 
-  // --- Handlers ---
+  // ---- Handlers ----
   const handleInject = async () => {
     if (!dllPath) { addLog('No DLL selected.', 'error'); return; }
     addLog(`Injecting on ${targetProcess}...`, 'system');
-
     const methodMap: Record<string, string> = {
-      'Standard': 'standard', 'Standard (LoadLibrary)': 'standard',
-      'Manual': 'manual_map', 'Manual Map (Stealth)': 'manual_map',
-      'Thread Hijack': 'thread_hijack', 'Thread Hijacking (Existing Thread)': 'thread_hijack',
-      'Reflective': 'reflective', 'Reflective Loader (Self-Mapping)': 'reflective',
+      'Standard': 'standard', 'Manual': 'manual_map',
+      'Thread Hijack': 'thread_hijack', 'Reflective': 'reflective',
     };
-
     try {
       const result = await invoke<string>('inject_dll', {
         request: { target: targetProcess, dllPath, method: methodMap[injectionMethod] || 'standard' }
@@ -245,10 +298,8 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
   const handleSaveSettings = async () => {
     try {
       const methodMap: Record<string, string> = {
-        'Standard': 'standard', 'Standard (LoadLibrary)': 'standard',
-        'Manual': 'manual_map', 'Manual Map (Stealth)': 'manual_map',
-        'Thread Hijack': 'thread_hijack', 'Thread Hijacking (Existing Thread)': 'thread_hijack',
-        'Reflective': 'reflective', 'Reflective Loader (Self-Mapping)': 'reflective',
+        'Standard': 'standard', 'Manual': 'manual_map',
+        'Thread Hijack': 'thread_hijack', 'Reflective': 'reflective',
       };
       await invoke('save_settings', {
         settings: { jvmArgs, injectionMethod: methodMap[injectionMethod] || 'standard', autoClose, randomWindowTitle: false, fdpJarPath: fdpPath, fdpWrapper: 'lunar' }
@@ -274,157 +325,163 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
     }
   };
 
-  // Window controls
-  const handleDrag = async (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;
-    try { await getCurrentWindow().startDragging(); } catch {}
+  // ---- News Actions ----
+  const handleNewsAction = (item: NewsItem) => {
+    if (item.url) { window.open(item.url, '_blank'); return; }
+    if (item.category === 'Interface') setIsThemeModalOpen(true);
   };
 
-  // Handle news card actions
-  const handleNewsAction = (item: NewsItem) => {
-    if (item.category === 'Interface') setThemeModalOpen(true);
-    else if (item.category === 'Client') setVersionModalOpen(true);
+  // ---- Browser-based Dragging ----
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('a') || target.closest('.no-drag') || target.closest('[role="button"]')) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const yWithinHeader = e.clientY - rect.top < 112;
+
+    if (yWithinHeader) {
+      setIsDragging(true);
+      dragStartPos.current = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      };
+    }
   };
+
+  useEffect(() => {
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragStartPos.current.x,
+          y: e.clientY - dragStartPos.current.y
+        });
+      }
+    };
+    const handleWindowMouseUp = () => { setIsDragging(false); };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleWindowMouseMove);
+      window.addEventListener('mouseup', handleWindowMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [isDragging]);
 
   return (
-    <div
-      className="h-screen w-screen flex items-center justify-center bg-[#050508] text-white font-sans"
-      style={accentStyles}
-    >
-      {/* Main Container with rounded corners and glass effect */}
+    <div style={appStyle} className="min-h-screen flex flex-col items-center justify-center text-white selection:bg-[var(--accent-500-30)] overflow-hidden relative font-sans transition-colors duration-500 bg-black">
+
+      {/* Main App Window */}
       <div
-        className="w-full h-full max-w-[1400px] max-h-[900px] bg-[#0c0c10]/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden relative"
-        onMouseDown={handleDrag}
-        style={{ userSelect: 'none' }}
+        className="w-[1100px] h-[720px] bg-[#09090b] rounded-[24px] shadow-2xl flex flex-col relative overflow-hidden border border-white/5 z-10 backdrop-blur-sm cursor-default"
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        onMouseDown={handleMouseDown}
       >
-        {/* Background ambience */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-[var(--accent-500)] opacity-[0.04] rounded-full blur-[100px]"></div>
-          <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] bg-[var(--accent-700)] opacity-[0.03] rounded-full blur-[80px]"></div>
-        </div>
 
-        {/* Header - draggable area */}
-        <Header onOpenSettings={() => setSettingsModalOpen(true)} />
+        <Header onOpenSettings={() => setIsSettingsModalOpen(true)} />
 
-        {/* Switch to classic - small link in header area */}
+        {/* Switch to classic layout */}
         <button
           onClick={onSwitchLayout}
-          className="absolute top-3 right-24 z-30 text-[10px] text-gray-500 hover:text-[var(--accent-400)] transition-colors uppercase tracking-wider font-bold"
+          className="absolute top-5 right-24 z-30 text-[10px] text-gray-500 hover:text-[var(--accent-400)] transition-colors uppercase tracking-wider font-bold"
           onMouseDown={e => e.stopPropagation()}
         >
           Classic View
         </button>
 
-        {/* Main Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-10 pb-6 relative z-10 custom-scrollbar">
+        {/* Content Area */}
+        <div className="flex-1 px-10 pb-4 pt-0 flex gap-8 h-full overflow-hidden">
 
-          {/* === 2-Column Main Layout === */}
-          <div className="flex gap-6 min-h-0">
+          {/* Left Column */}
+          <div className="w-[340px] flex flex-col h-full pt-2">
+            <UpdateCard />
 
-            {/* LEFT COLUMN: Update Card + Version Info + Launch Button */}
-            <div className="w-[340px] shrink-0 flex flex-col gap-4">
+            <div className="mt-5 mb-8 pl-1">
+               <p className="text-gray-400 text-sm font-medium mb-3 flex items-center gap-2">
+                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-500)] animate-pulse"></span>
+                   fix(core): Memory leak in pipe (#992)
+               </p>
+               <p className="text-gray-500 text-sm leading-relaxed">
+                 Experimental build. Use at your own risk on main accounts. Integrity check passed.
+               </p>
+            </div>
 
-              {/* Update Card */}
-              <div className="w-full relative rounded-xl overflow-hidden bg-gradient-to-br from-[var(--accent-700)] to-[var(--accent-600)] shadow-xl group">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[var(--accent-500-30)] via-transparent to-transparent"></div>
-                <div className="relative p-6 flex flex-col min-h-[200px]">
-                  <div className="flex justify-end">
-                    <span className="bg-[#0f0f11]/80 backdrop-blur px-2.5 py-1 rounded text-xs text-[var(--accent-100)] font-bold tracking-wide border border-[var(--accent-500-20)]">
-                      07/02/2026
-                    </span>
-                  </div>
-                  <div className="mt-auto">
-                    <h2 className="text-2xl font-black text-white mb-2 tracking-tight">ZAVZ Injector v2.1.0</h2>
-                    <div className="h-1 w-12 bg-white/20 rounded-full group-hover:w-24 transition-all duration-700"></div>
-                  </div>
+            <div className="mt-auto space-y-4 mb-2">
+                 {/* Version Selectors */}
+                <div className="flex gap-4">
+                    <div onClick={() => setIsClientModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-3 flex flex-col items-center justify-center gap-2 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-28 group">
+                         <InjectorIcon />
+                         <span className="text-sm font-bold text-white mt-1 group-hover:text-[var(--accent-400)]">v1.0.0</span>
+                         <span className="text-[10px] text-gray-500">Injector</span>
+                    </div>
+                    <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-3 flex flex-col items-center justify-center gap-2 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-28 group">
+                         <MinecraftIcon />
+                         <span className="text-sm font-bold text-white mt-1 group-hover:text-[var(--accent-400)]">.jar</span>
+                         <span className="text-[10px] text-gray-500">Minecraft</span>
+                    </div>
                 </div>
-              </div>
 
-              {/* Changelog info */}
-              <div className="space-y-2 px-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-500)]"></div>
-                  <span className="text-xs text-gray-300">fix(core): Memory leak in pipe (#992)</span>
-                </div>
-                <p className="text-[11px] text-gray-500 leading-relaxed">
-                  Experimental build. Use at your own risk on main accounts. Integrity check passed.
-                </p>
-              </div>
-
-              {/* Version Info Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-[var(--accent-500-30)] transition-colors cursor-pointer group">
-                  <InjectorIcon />
-                  <div className="text-center">
-                    <span className="text-white font-bold text-sm block">v1.0.0</span>
-                    <span className="text-gray-500 text-[10px] uppercase tracking-wider">Injector</span>
-                  </div>
-                </div>
-                <div
-                  onClick={() => setVersionModalOpen(true)}
-                  className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:border-[var(--accent-500-30)] transition-colors cursor-pointer group"
+                <button
+                  onClick={() => setIsInjectionModalOpen(true)}
+                  className="w-full h-14 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-black text-lg rounded-lg shadow-[0_4px_20px_var(--accent-shadow)] transition-all transform active:scale-[0.98] uppercase tracking-wide"
                 >
-                  <MinecraftIcon />
-                  <div className="text-center">
-                    <span className="text-white font-bold text-sm block">.jar</span>
-                    <span className="text-gray-500 text-[10px] uppercase tracking-wider">Minecraft</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* LAUNCH INJECTOR Button */}
-              <button
-                onClick={() => setInjectionModalOpen(true)}
-                className="w-full bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-black text-lg py-4 rounded-xl shadow-[0_4px_30px_var(--accent-shadow)] hover:shadow-[0_8px_40px_var(--accent-shadow)] transition-all active:scale-[0.98] uppercase tracking-wider"
-              >
-                LAUNCH INJECTOR
-              </button>
-
-              {/* Expand arrow */}
-              <div className="flex justify-center">
-                <ChevronDown size={18} className="text-gray-600 animate-bounce" />
-              </div>
+                   Launch Injector
+                </button>
             </div>
-
-            {/* RIGHT COLUMN: News Grid (2-column masonry) */}
-            <div className="flex-1 min-w-0">
-              <div className="grid grid-cols-2 gap-4 auto-rows-auto">
-                {NEWS_ITEMS.map(item => (
-                  <NewsCard key={item.id} item={item} onAction={handleNewsAction} />
-                ))}
-              </div>
-            </div>
-
           </div>
+
+          {/* Right Column (News Grid) */}
+          <div className="flex-1 relative group/news h-full">
+             <div className="absolute inset-0 overflow-y-auto pr-2 pb-14 scrollbar-thin pt-2">
+                <div className="grid grid-cols-2 gap-4">
+                    {newsItems.map((item) => (
+                        <NewsCard key={item.id} item={item} onAction={handleNewsAction} />
+                    ))}
+                </div>
+             </div>
+
+             {/* Bottom Fade Gradient */}
+             <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#09090b] via-[#09090b]/90 to-transparent pointer-events-none"></div>
+
+             {/* Floating Chevron */}
+             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pb-1 z-20 pointer-events-none">
+                 <div className="text-gray-500 animate-bounce transition-colors duration-[2000ms]">
+                     <ChevronDown size={28} />
+                 </div>
+             </div>
+          </div>
+
         </div>
 
-        {/* Footer: Social Links */}
-        <div className="shrink-0 px-10 py-4 border-t border-white/5 bg-[#0a0a0c]/50 flex items-center justify-center gap-6 relative z-10">
-          <a href="#" className="text-gray-500 hover:text-white transition-colors">
-            <ZIcon className="w-5 h-5" />
-          </a>
-          <a href="https://github.com/opZywl" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors">
-            <GithubIcon className="w-5 h-5" />
-          </a>
-          <a href="#" className="text-gray-500 hover:text-[#5865F2] transition-colors">
-            <DiscordIcon className="w-5 h-5" />
-          </a>
-          <a href="#" className="text-gray-500 hover:text-[#1DA1F2] transition-colors">
-            <TwitterIcon className="w-5 h-5" />
-          </a>
-          <a href="#" className="text-gray-500 hover:text-red-500 transition-colors">
-            <YoutubeIcon className="w-5 h-5" />
-          </a>
-          <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 ml-4 text-xs font-medium">
-            <ExternalLink size={12} />
-            zavzinjector.net
-          </a>
+        {/* Footer Bar */}
+        <div className="px-10 h-[88px] flex items-center justify-end relative z-30 bg-[#09090b] border-t border-white/5">
+             <div className="flex items-center bg-[#0e0e11] p-1.5 rounded-lg border border-white/5 shadow-lg">
+                 <SocialLink icon={<ZIcon className="w-6 h-6" />} label="Zavz" />
+                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} label="GitHub" />
+                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} label="Discord" />
+                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" />
+                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" />
+
+                 <a
+                    href="https://zavzinjector.net"
+                    className="relative flex items-center gap-2 pl-3 pr-4 py-1.5 ml-2 rounded-lg overflow-hidden group bg-[#18181b]"
+                 >
+                    <div className="absolute inset-0 bg-[var(--accent-600)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                    <div className="relative z-10 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-[var(--accent-600)] group-hover:bg-white/20 rounded flex items-center justify-center transition-colors shadow-sm">
+                            <ExternalLink size={14} className="text-white" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">zavzinjector.net</span>
+                    </div>
+                </a>
+             </div>
         </div>
 
         {/* Modals */}
         <InjectionModal
-          isOpen={injectionModalOpen}
-          onClose={() => setInjectionModalOpen(false)}
+          isOpen={isInjectionModalOpen}
+          onClose={() => setIsInjectionModalOpen(false)}
           onInject={handleInject}
           dllPath={dllPath}
           setDllPath={setDllPath}
@@ -432,12 +489,12 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
           setFdpMode={setFdpMode}
         />
         <ClientSelectionModal
-          isOpen={clientModalOpen}
-          onClose={() => setClientModalOpen(false)}
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
         />
         <SettingsModal
-          isOpen={settingsModalOpen}
-          onClose={() => setSettingsModalOpen(false)}
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
           targetProcess={targetProcess}
           setTargetProcess={setTargetProcess}
           injectionMethod={injectionMethod}
@@ -449,21 +506,21 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
           onSave={handleSaveSettings}
         />
         <VersionModal
-          isOpen={versionModalOpen}
-          onClose={() => setVersionModalOpen(false)}
+          isOpen={isVersionModalOpen}
+          onClose={() => setIsVersionModalOpen(false)}
           fdpPath={fdpPath}
           setFdpPath={setFdpPath}
         />
         <ThemeModal
-          isOpen={themeModalOpen}
-          onClose={() => setThemeModalOpen(false)}
-          currentTheme={theme}
-          setTheme={setTheme}
-          themes={THEME_PRESETS}
+          isOpen={isThemeModalOpen}
+          onClose={() => setIsThemeModalOpen(false)}
+          currentTheme={currentThemeKey}
+          setTheme={setCurrentThemeKey}
+          themes={defaultThemes as any}
           customHex={customHex}
           setCustomHex={setCustomHex}
-          isCustom={isCustomTheme}
-          setIsCustom={setIsCustomTheme}
+          isCustom={isCustom}
+          setIsCustom={setIsCustom}
         />
       </div>
     </div>
