@@ -1,26 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Search, RefreshCw, Cpu } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
 
 interface Process {
   name: string;
   pid: number;
 }
 
-const MOCK_PROCESSES: Process[] = [
+const FALLBACK_PROCESSES: Process[] = [
   { name: 'javaw.exe', pid: 12450 },
   { name: 'java.exe', pid: 8432 },
   { name: 'minecraft.exe', pid: 15678 },
-  { name: 'Discord.exe', pid: 4521 },
-  { name: 'Chrome.exe', pid: 9982 },
-  { name: 'Spotify.exe', pid: 3321 },
-  { name: 'idea64.exe', pid: 11204 },
-  { name: 'Code.exe', pid: 6754 },
-  { name: 'explorer.exe', pid: 4321 },
-  { name: 'svchost.exe', pid: 1024 },
-  { name: 'agent_ovpnconnect.exe', pid: 4908 },
-  { name: 'AggregatorHost.exe', pid: 8464 },
-  { name: 'AppActions.exe', pid: 21180 },
-  { name: 'audiodg.exe', pid: 1211 },
 ];
 
 interface ProcessSelectionModalProps {
@@ -33,13 +23,34 @@ export const ProcessSelectionModal: React.FC<ProcessSelectionModalProps> = ({ is
   if (!isOpen) return null;
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [processes, setProcesses] = useState<Process[]>(FALLBACK_PROCESSES);
+  const [loading, setLoading] = useState(false);
+
+  const fetchProcesses = async () => {
+    setLoading(true);
+    try {
+      const result = await invoke<Process[]>('list_processes');
+      if (result && result.length > 0) {
+        setProcesses(result);
+      }
+    } catch {
+      // Keep fallback processes
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchProcesses();
+    }
+  }, [isOpen]);
 
   const filteredProcesses = useMemo(() => {
-    return MOCK_PROCESSES.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    return processes.filter(p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.pid.toString().includes(searchTerm)
     );
-  }, [searchTerm]);
+  }, [searchTerm, processes]);
 
   return (
     <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
@@ -54,7 +65,7 @@ export const ProcessSelectionModal: React.FC<ProcessSelectionModalProps> = ({ is
                 <p className="text-gray-500 text-xs">{filteredProcesses.length} processes running</p>
             </div>
             <div className="flex gap-2">
-                <button className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors">
+                <button onClick={fetchProcesses} className={`p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors ${loading ? 'animate-spin' : ''}`}>
                     <RefreshCw size={16} />
                 </button>
                 <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors">

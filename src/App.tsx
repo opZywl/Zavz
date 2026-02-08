@@ -7,9 +7,11 @@ import SettingsCard from './components/SettingsCard';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import AboutTab from './components/AboutTab';
+import NewLayoutApp from './layout-new/NewLayoutApp';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { resolveResource } from '@tauri-apps/api/path';
+import { Sparkles } from 'lucide-react';
 
 // Helper to generate color palette from hex
 const hexToRgba = (hex: string, alpha: number) => {
@@ -28,6 +30,21 @@ const DEFAULT_THEMES: Record<string, any> = {
 };
 
 const App = () => {
+  // --- Layout Toggle ---
+  const [useNewLayout, setUseNewLayout] = useState(() => {
+    try { return localStorage.getItem('yzy-layout') === 'v2'; } catch { return false; }
+  });
+
+  const toggleLayout = (v2: boolean) => {
+    setUseNewLayout(v2);
+    try { localStorage.setItem('yzy-layout', v2 ? 'v2' : 'v1'); } catch {}
+  };
+
+  // If new layout is active, render it
+  if (useNewLayout) {
+    return <NewLayoutApp onSwitchLayout={() => toggleLayout(false)} />;
+  }
+
   // --- State ---
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [theme, setTheme] = useState<ThemeColor>('blue');
@@ -423,6 +440,16 @@ const App = () => {
                 updateMenuOpen={updateMenuOpen}
                 setUpdateMenuOpen={setUpdateMenuOpen}
             />
+
+            {/* Layout Switch Button - Fixed position in sidebar area */}
+            <button
+              onClick={() => toggleLayout(true)}
+              className="absolute bottom-20 left-4 z-40 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[var(--theme-primary)]/20 to-purple-500/20 border border-[var(--theme-primary)]/30 hover:border-[var(--theme-primary)] rounded-lg text-xs font-bold text-[var(--theme-light)] hover:text-white transition-all hover:shadow-[0_0_20px_var(--theme-glow)] group"
+              title="Switch to New Layout v2"
+            >
+              <Sparkles size={14} className="group-hover:animate-pulse" />
+              <span>New Layout</span>
+            </button>
 
             {/* === Main Content Area === */}
             <div className="flex-1 bg-[#020204] relative flex flex-col">

@@ -1,31 +1,49 @@
 import React, { useState } from 'react';
-import { X, Folder, ExternalLink, ChevronDown, Check, Activity, Terminal, List, Monitor } from 'lucide-react';
+import { X, Folder, ExternalLink, ChevronDown, Check, Activity, Terminal, List } from 'lucide-react';
 import { ProcessSelectionModal } from './ProcessSelectionModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  targetProcess: string;
+  setTargetProcess: (p: string) => void;
+  injectionMethod: string;
+  setInjectionMethod: (m: string) => void;
+  jvmArgs: string;
+  setJvmArgs: (args: string) => void;
+  watcherActive: boolean;
+  onWatcherToggle: (enabled: boolean) => void;
+  onSave: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, targetProcess, setTargetProcess, injectionMethod, setInjectionMethod, jvmArgs, setJvmArgs, watcherActive, onWatcherToggle, onSave }) => {
   if (!isOpen) return null;
 
   const [activeTab, setActiveTab] = useState<'General' | 'Preferences'>('General');
-  
-  // General State
+
+  // General State (local UI)
   const [jvmDistribution, setJvmDistribution] = useState('Automatic');
   const [memory, setMemory] = useState(4096);
   const [jvmArgsEnabled, setJvmArgsEnabled] = useState(true);
-  const [jvmArguments, setJvmArguments] = useState('-Xmx4G -XX:+UseG1GC -noverify');
   const [keepRunning, setKeepRunning] = useState(false);
 
-  // Preferences State
-  const [injectionMethod, setInjectionMethod] = useState('Standard (LoadLibrary)');
-  const [processWatcher, setProcessWatcher] = useState(false);
-  const [systemLog, setSystemLog] = useState(false);
-  const [targetProcess, setTargetProcess] = useState('javaw.exe');
-  
+  // Method display mapping
+  const methodDisplayMap: Record<string, string> = {
+    'Standard': 'Standard (LoadLibrary)',
+    'Manual': 'Manual Map (Stealth)',
+    'Thread Hijack': 'Thread Hijacking (Existing Thread)',
+    'Reflective': 'Reflective Loader (Self-Mapping)',
+  };
+  const methodReverseMap: Record<string, string> = {
+    'Standard (LoadLibrary)': 'Standard',
+    'Manual Map (Stealth)': 'Manual',
+    'Thread Hijacking (Existing Thread)': 'Thread Hijack',
+    'Reflective Loader (Self-Mapping)': 'Reflective',
+  };
+  const displayMethod = methodDisplayMap[injectionMethod] || injectionMethod;
+
   // UI State
+  const [systemLog, setSystemLog] = useState(false);
   const [isMethodDropdownOpen, setIsMethodDropdownOpen] = useState(false);
   const [isProcessSelectorOpen, setIsProcessSelectorOpen] = useState(false);
 
@@ -143,10 +161,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         <label className="text-sm font-medium text-gray-200">JVM Arguments</label>
                         <ToggleSwitch checked={jvmArgsEnabled} onChange={() => setJvmArgsEnabled(!jvmArgsEnabled)} />
                     </div>
-                    <input 
+                    <input
                         type="text"
-                        value={jvmArguments}
-                        onChange={(e) => setJvmArguments(e.target.value)}
+                        value={jvmArgs}
+                        onChange={(e) => setJvmArgs(e.target.value)}
                         disabled={!jvmArgsEnabled}
                         className={`w-full bg-[#18181b] border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent-500)] font-mono transition-opacity ${!jvmArgsEnabled ? 'opacity-50 text-gray-500 cursor-not-allowed' : 'text-gray-300'}`}
                     />
@@ -160,8 +178,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
                 {/* Buttons */}
                 <div className="space-y-3 pt-4">
-                    <button 
-                        onClick={onClose}
+                    <button
+                        onClick={() => { onSave(); onClose(); }}
                         className="w-full bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold py-2.5 rounded-md transition-colors text-sm"
                     >
                         Save Configuration
@@ -206,7 +224,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                             }}
                             className="w-full bg-[#18181b] border border-white/10 rounded-md px-3 py-2.5 text-sm text-gray-300 flex items-center justify-between hover:bg-[#27272a] transition-colors focus:border-[var(--accent-500)] outline-none"
                         >
-                            <span className="font-medium text-[var(--accent-400)]">{injectionMethod}</span>
+                            <span className="font-medium text-[var(--accent-400)]">{displayMethod}</span>
                             <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isMethodDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
@@ -216,13 +234,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                     <button
                                         key={method}
                                         onClick={() => {
-                                            setInjectionMethod(method);
+                                            setInjectionMethod(methodReverseMap[method] || method);
                                             setIsMethodDropdownOpen(false);
                                         }}
                                         className="w-full px-4 py-2.5 text-left text-sm text-gray-300 hover:bg-[#27272a] hover:text-white flex items-center justify-between group transition-colors"
                                     >
                                         <span>{method}</span>
-                                        {injectionMethod === method && <Check size={14} className="text-[var(--accent-500)]" />}
+                                        {displayMethod === method && <Check size={14} className="text-[var(--accent-500)]" />}
                                     </button>
                                 ))}
                             </div>
@@ -233,26 +251,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 {/* Process Watcher */}
                 <div className={`
                     relative overflow-hidden rounded-xl border transition-all duration-300
-                    ${processWatcher ? 'bg-[var(--accent-500-20)] border-[var(--accent-500)]' : 'bg-[#18181b] border-white/10'}
+                    ${watcherActive ? 'bg-[var(--accent-500-20)] border-[var(--accent-500)]' : 'bg-[#18181b] border-white/10'}
                 `}>
                     <div className="p-4 flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-lg transition-colors ${processWatcher ? 'bg-[var(--accent-500)] text-white' : 'bg-[#27272a] text-gray-400'}`}>
+                            <div className={`p-2 rounded-lg transition-colors ${watcherActive ? 'bg-[var(--accent-500)] text-white' : 'bg-[#27272a] text-gray-400'}`}>
                                 <Activity size={20} />
                             </div>
                             <div className="flex flex-col">
-                                <h3 className={`text-sm font-bold transition-colors ${processWatcher ? 'text-white' : 'text-gray-300'}`}>Process Watcher</h3>
+                                <h3 className={`text-sm font-bold transition-colors ${watcherActive ? 'text-white' : 'text-gray-300'}`}>Process Watcher</h3>
                                 <p className="text-[10px] uppercase font-bold tracking-wider mt-0.5 opacity-80">
-                                    {processWatcher ? <span className="text-[var(--accent-400)]">System Active</span> : <span className="text-gray-500">System Standby</span>}
+                                    {watcherActive ? <span className="text-[var(--accent-400)]">System Active</span> : <span className="text-gray-500">System Standby</span>}
                                 </p>
                             </div>
                         </div>
-                        
-                        <ToggleSwitch checked={processWatcher} onChange={() => setProcessWatcher(!processWatcher)} />
+
+                        <ToggleSwitch checked={watcherActive} onChange={() => onWatcherToggle(!watcherActive)} />
                     </div>
-                    
-                    {/* Background decoration for active state */}
-                    {processWatcher && (
+
+                    {watcherActive && (
                          <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[var(--accent-500)] opacity-20 blur-[50px] rounded-full pointer-events-none"></div>
                     )}
                 </div>
