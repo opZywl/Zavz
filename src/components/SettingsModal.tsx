@@ -327,7 +327,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Footer */}
         <div className="px-7 py-4 shrink-0 border-t border-white/[0.06]">
-             <span className="text-xs text-gray-600 font-medium">ZAVZ Injector</span>
+             <span className="text-xs text-gray-600 font-medium">Injector</span>
         </div>
 
         <ProcessSelectionModal

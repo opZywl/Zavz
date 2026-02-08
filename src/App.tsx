@@ -430,7 +430,7 @@ const App = () => {
                     </div>
                     <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#111114] rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 border border-white/[0.06] hover:border-[var(--accent-500-30)] cursor-pointer transition-all group">
                          <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-10 h-10 object-contain drop-shadow-lg" />
-                         <span className="text-[13px] font-bold text-white mt-1 group-hover:text-[var(--accent-400)] transition-colors">1.7 - 1.21.11</span>
+                         <span className="text-[13px] font-bold text-white mt-1 group-hover:text-[var(--accent-400)] transition-colors">1.8.9</span>
                          <span className="text-[10px] text-gray-500 font-medium">Minecraft</span>
                     </div>
                 </div>
@@ -439,7 +439,7 @@ const App = () => {
                   onClick={() => setIsInjectionModalOpen(true)}
                   className={`w-full h-12 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold text-[15px] rounded-2xl transition-all transform active:scale-[0.98] tracking-wide ${glowEnabled ? 'shadow-[0_4px_24px_var(--accent-shadow)]' : ''}`}
                 >
-                   Launch ZAVZ Injector
+                   Launch Injector
                 </button>
             </div>
           </div>

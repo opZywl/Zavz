@@ -1,5 +1,5 @@
 {
-  "productName": "YZY Injector",
+  "productName": "Zavz Injector",
   "version": "2.0.0",
   "identifier": "com.yzy.injector",
   "build": {
@@ -12,7 +12,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "ZAVZ Injector",
+        "title": "Injector",
         "label": "main",
         "width": 1100,
         "minWidth": 1000,

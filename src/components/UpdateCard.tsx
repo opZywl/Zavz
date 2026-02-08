@@ -24,8 +24,7 @@ export const UpdateCard = ({ version, glowEnabled = true }: UpdateCardProps) => 
 
           {/* Title + Underline at bottom */}
           <div className="mt-auto">
-            <h2 className="text-[22px] font-black text-white tracking-tight leading-tight group-hover:translate-x-0.5 transition-transform" style={{ fontFamily: "'Poppins', sans-serif" }}>
-              ZAVZ Injector {version}
+            <h2 className="text-[22px] font-black text-white tracking-tight leading-tight group-hover:translate-x-0.5 transition-transform" style={{ fontFamily: "'Poppins', sans-serif" }}>Injector {version}
             </h2>
             <div className="h-[3px] w-14 bg-white/30 rounded-full mt-2 group-hover:w-20 transition-all duration-500"></div>
           </div>
