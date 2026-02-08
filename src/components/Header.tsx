@@ -3,11 +3,12 @@ import { Minus } from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface HeaderProps {
+    nickname: string;
     onOpenSettings?: () => void;
     onDrag?: (e: React.MouseEvent) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
+export const Header: React.FC<HeaderProps> = ({ nickname, onOpenSettings, onDrag }) => {
   const handleClose = async () => {
     try { await getCurrentWindow().close(); } catch {}
   };
@@ -15,17 +16,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
     try { await getCurrentWindow().minimize(); } catch {}
   };
 
+  const role = nickname === 'Zywl' ? 'Administrator' : 'User';
+
   return (
     <div className="flex items-center justify-between px-10 py-6 w-full select-none z-20 relative shrink-0" onMouseDown={onDrag}>
-      {/* Left: Logo */}
+      {/* Left: Logo - LiquidBounce style */}
       <div className="flex items-center gap-3 group cursor-pointer">
         <div className="transform transition-transform group-hover:rotate-12 duration-300">
              <ZavzLogo />
         </div>
-        <div className="flex items-center">
-            <span className="font-extrabold text-3xl tracking-tighter text-white italic">ZAVZ</span>
-            <div className="bg-[var(--accent-600)] px-1.5 py-0.5 ml-1.5 rounded skew-x-[-12deg] shadow-lg shadow-[var(--accent-shadow)]">
-                <span className="font-black text-lg text-white block transform skew-x-[12deg] tracking-wider">INJECTOR</span>
+        <div className="flex flex-col">
+            <span className="font-extrabold text-3xl tracking-tighter text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>ZAVZ</span>
+            <div className="bg-[var(--accent-600)] px-2.5 py-0.5 rounded-md shadow-lg shadow-[var(--accent-shadow)] w-fit -mt-1">
+                <span className="font-black text-[11px] text-white block tracking-[0.2em] uppercase" style={{ fontFamily: "'Poppins', sans-serif" }}>INJECTOR</span>
             </div>
         </div>
       </div>
@@ -33,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
       {/* Center: Welcome Message */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
         <div className="bg-[#18181b] w-[400px] h-12 rounded flex flex-col items-center justify-center relative shadow-lg border border-[var(--accent-shadow-light)]">
-            <span className="text-gray-200 font-medium text-base">Welcome back, Zywl.</span>
+            <span className="text-gray-200 font-medium text-base">Welcome back, {nickname}.</span>
             <div className="absolute bottom-0 w-24 h-[3px] bg-[var(--accent-600)] rounded-t-full shadow-[0_0_10px_var(--accent-500)]"></div>
         </div>
       </div>
@@ -46,14 +49,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
         >
           <div className="w-9 h-9 bg-[#3e2723] rounded-md overflow-hidden border-2 border-[#18181b] shadow-sm group-hover:border-[var(--accent-600)] transition-colors">
              <img
-               src="https://api.mineatar.io/face/c06f89064c8a49119c29ea1dbd1aab82?scale=8"
+               src={`https://api.mineatar.io/face/${nickname}?scale=8`}
                alt="Skin"
                className="w-full h-full object-cover"
+               onError={(e) => { (e.target as HTMLImageElement).src = 'https://api.mineatar.io/face/c06f89064c8a49119c29ea1dbd1aab82?scale=8'; }}
              />
           </div>
           <div className="flex flex-col leading-tight flex-1">
-            <span className="font-bold text-sm text-gray-100 group-hover:text-[var(--accent-400)] transition-colors">Zywl</span>
-            <span className="text-[10px] text-gray-500 font-medium">Administrator</span>
+            <span className="font-bold text-sm text-gray-100 group-hover:text-[var(--accent-400)] transition-colors">{nickname}</span>
+            <span className="text-[10px] text-gray-500 font-medium">{role}</span>
           </div>
           <Settings size={18} className="text-gray-400 group-hover:text-[var(--accent-500)] group-hover:rotate-90 transition-all duration-500" />
         </div>
