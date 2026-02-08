@@ -1,13 +1,14 @@
 interface UpdateCardProps {
   version: string;
+  glowEnabled?: boolean;
 }
 
-export const UpdateCard = ({ version }: UpdateCardProps) => {
+export const UpdateCard = ({ version, glowEnabled = true }: UpdateCardProps) => {
   const today = new Date();
   const dateStr = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   return (
-    <div className="w-full relative h-[155px] rounded-2xl overflow-hidden bg-gradient-to-br from-[var(--accent-600)] via-[var(--accent-700)] to-[var(--accent-900)] shadow-[0_8px_32px_var(--accent-shadow)] cursor-pointer hover:shadow-[0_12px_40px_var(--accent-shadow)] transition-all duration-300 group">
+    <div className={`w-full relative h-[155px] rounded-2xl overflow-hidden bg-gradient-to-br from-[var(--accent-600)] via-[var(--accent-700)] to-[var(--accent-900)] cursor-pointer transition-all duration-300 group ${glowEnabled ? 'shadow-[0_8px_32px_var(--accent-shadow)] hover:shadow-[0_12px_40px_var(--accent-shadow)]' : 'shadow-lg hover:shadow-xl'}`}>
        {/* Radial glow */}
        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[var(--accent-500)]/30 via-transparent to-transparent"></div>
        {/* Subtle noise texture */}
