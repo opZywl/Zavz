@@ -159,12 +159,16 @@ const defaultNewsItems: NewsItem[] = [
   { id: '6', category: 'Script', title: '', description: '', imageUrl: '', date: '', linkText: 'Coming Soon' }
 ];
 
-// ---- Social Link Component (opens in system browser) ----
-const SocialLink = ({ icon, link }: { icon: React.ReactNode, link?: string }) => (
+// ---- Social Link Component with Tooltip (opens in system browser) ----
+const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: string, link?: string }) => (
     <button
         onClick={() => { if (link) openExternal(link); }}
-        className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-white transition-colors duration-200"
+        className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-white transition-colors duration-200 relative group"
     >
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[var(--accent-500)] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none transform translate-y-2 group-hover:translate-y-0 whitespace-nowrap shadow-lg z-50">
+            {label}
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--accent-500)] rotate-45"></div>
+        </div>
         {icon}
     </button>
 );
@@ -219,6 +223,10 @@ const App = () => {
   const [currentThemeKey, setCurrentThemeKey] = useState<string>('purple');
   const [customHex, setCustomHex] = useState<string>('#c500ff');
   const [isCustom, setIsCustom] = useState(false);
+  const [glowEnabled, setGlowEnabled] = useState<boolean>(() => {
+    const stored = localStorage.getItem('yzy-glow');
+    return stored !== null ? stored === 'true' : true;
+  });
 
   // Modal state
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
@@ -400,7 +408,7 @@ const App = () => {
 
           {/* Left Column */}
           <div className="w-[320px] flex flex-col min-h-0 pt-1">
-            <UpdateCard version={appVersion} />
+            <UpdateCard version={appVersion} glowEnabled={glowEnabled} />
 
             <div className="mt-4 mb-6 pl-1">
                <p className="text-gray-400 text-[13px] font-medium mb-2 flex items-center gap-2">
@@ -429,7 +437,7 @@ const App = () => {
 
                 <button
                   onClick={() => setIsInjectionModalOpen(true)}
-                  className="w-full h-12 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold text-[15px] rounded-2xl shadow-[0_4px_24px_var(--accent-shadow)] transition-all transform active:scale-[0.98] tracking-wide"
+                  className={`w-full h-12 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold text-[15px] rounded-2xl transition-all transform active:scale-[0.98] tracking-wide ${glowEnabled ? 'shadow-[0_4px_24px_var(--accent-shadow)]' : ''}`}
                 >
                    Launch ZAVZ Injector
                 </button>
@@ -459,20 +467,25 @@ const App = () => {
 
         </div>
 
-        {/* Footer Bar - Compact like LiquidBounce */}
-        <div className="px-8 h-14 flex items-center justify-end relative z-30 shrink-0">
-             <div className="flex items-center gap-0.5">
-                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} link="https://github.com/opZywl" />
-                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} link="https://discord.gg/3XRFGeqEYD" />
-                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} link="https://fdpinfo.github.io/next/" />
-                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} link="https://www.youtube.com/@opZywl" />
+        {/* Footer Bar - LiquidBounce style with contour */}
+        <div className="px-8 h-16 flex items-center justify-end relative z-30 shrink-0">
+             <div className="flex items-center bg-[#111114] p-1.5 rounded-xl border border-white/[0.06]">
+                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} label="GitHub" link="https://github.com/opZywl" />
+                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} label="Discord" link="https://discord.gg/3XRFGeqEYD" />
+                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" link="https://fdpinfo.github.io/next/" />
+                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" link="https://www.youtube.com/@opZywl" />
 
                  <button
                     onClick={() => openExternal('https://lucas-lima.vercel.app/')}
-                    className="flex items-center gap-2 pl-3 pr-4 py-2 ml-2 rounded-xl bg-[#141417] border border-white/[0.06] hover:border-[var(--accent-500-30)] transition-all group"
+                    className="relative flex items-center gap-2 pl-3 pr-4 py-1.5 ml-1.5 rounded-lg overflow-hidden group bg-[#1a1a1f]"
                  >
-                    <ExternalLink size={14} className="text-gray-500 group-hover:text-[var(--accent-400)] transition-colors" />
-                    <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">lucas-lima.xyz</span>
+                    <div className="absolute inset-0 bg-[var(--accent-600)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                    <div className="relative z-10 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-[var(--accent-600)] group-hover:bg-white/20 rounded flex items-center justify-center transition-colors shadow-sm">
+                            <ExternalLink size={14} className="text-white" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">lucas-lima.xyz</span>
+                    </div>
                 </button>
              </div>
         </div>
@@ -527,6 +540,8 @@ const App = () => {
           setCustomHex={setCustomHex}
           isCustom={isCustom}
           setIsCustom={setIsCustom}
+          glowEnabled={glowEnabled}
+          setGlowEnabled={(v: boolean) => { setGlowEnabled(v); localStorage.setItem('yzy-glow', String(v)); }}
         />
         <UpdateAlertModal
           isOpen={showUpdateAlert}
