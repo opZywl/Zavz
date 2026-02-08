@@ -178,11 +178,7 @@ const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: strin
 );
 
 // ---- Main Component ----
-interface NewLayoutAppProps {
-  onSwitchLayout: () => void;
-}
-
-const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
+const NewLayoutApp = () => {
   // Theme state
   const [currentThemeKey, setCurrentThemeKey] = useState<string>('red');
   const [customHex, setCustomHex] = useState<string>('#ef4444');
@@ -339,14 +335,6 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
     <div style={appStyle} className="h-screen w-screen bg-[#09090b] flex flex-col relative overflow-hidden text-white selection:bg-[var(--accent-500-30)] font-sans transition-colors duration-500 cursor-default">
 
         <Header onOpenSettings={() => setIsSettingsModalOpen(true)} onDrag={handleDrag} />
-
-        {/* Switch to classic layout */}
-        <button
-          onClick={onSwitchLayout}
-          className="absolute top-5 right-24 z-30 text-[10px] text-gray-500 hover:text-[var(--accent-400)] transition-colors uppercase tracking-wider font-bold"
-        >
-          Classic View
-        </button>
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 px-10 pb-4 pt-0 flex gap-8 overflow-hidden">
