@@ -8,7 +8,9 @@ import { NewsCard } from './components/NewsCard';
 import { UpdateCard } from './components/UpdateCard';
 import { InjectorIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon, ExternalLink, ChevronDown } from './components/Icons';
 import { NicknameModal } from './components/NicknameModal';
+import { UpdateAlertModal } from './components/UpdateAlertModal';
 import { openExternal } from './utils/openExternal';
+import { fetchInjectorConfig } from './utils/apiConnector';
 import { ThemeModal } from './components/ThemeModal';
 import { VersionModal } from './components/VersionModal';
 import { ClientSelectionModal } from './components/ClientSelectionModal';
@@ -201,6 +203,18 @@ const App = () => {
     setNickname(name);
   };
 
+  // Remote config state (from injector.txt)
+  const [appVersion, setAppVersion] = useState<string>('v1.0.0');
+  const [showUpdateAlert, setShowUpdateAlert] = useState(false);
+
+  // Fetch remote config on mount
+  useEffect(() => {
+    fetchInjectorConfig().then((config) => {
+      setAppVersion(config.version);
+      if (config.showUpdateAlert) setShowUpdateAlert(true);
+    });
+  }, []);
+
   // Theme state
   const [currentThemeKey, setCurrentThemeKey] = useState<string>('purple');
   const [customHex, setCustomHex] = useState<string>('#c500ff');
@@ -386,7 +400,7 @@ const App = () => {
 
           {/* Left Column */}
           <div className="w-[340px] flex flex-col min-h-0 pt-2">
-            <UpdateCard />
+            <UpdateCard version={appVersion} />
 
             <div className="mt-5 mb-8 pl-1">
                <p className="text-gray-400 text-sm font-medium mb-3 flex items-center gap-2">
@@ -518,6 +532,11 @@ const App = () => {
           setCustomHex={setCustomHex}
           isCustom={isCustom}
           setIsCustom={setIsCustom}
+        />
+        <UpdateAlertModal
+          isOpen={showUpdateAlert}
+          onClose={() => setShowUpdateAlert(false)}
+          version={appVersion}
         />
     </div>
   );

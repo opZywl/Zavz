@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ChevronDown, Check, Activity, Terminal, List, Play, Eye, MessageSquare, Power } from './Icons';
+import { X, ChevronDown, Check, Activity, Terminal, List, Play, Eye, Power } from './Icons';
 import { ProcessSelectionModal } from './ProcessSelectionModal';
 
 interface SettingsModalProps {
@@ -198,7 +198,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Discord RPC */}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-[#18181b]/50 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="flex items-center gap-3">
-                        <MessageSquare size={16} className="text-gray-400" />
+                        <img src="/img/icon/social/icon-discord.svg" alt="Discord" className="w-4 h-4 opacity-50" />
                         <div className="flex flex-col">
                             <span className="text-sm text-gray-200 font-medium">Discord Rich Presence</span>
                             <span className="text-[10px] text-gray-500">Show status on Discord profile</span>
@@ -325,7 +325,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-4 shrink-0 border-t border-white/5 bg-[#0f0f11]">
-             <span className="text-xs text-gray-500 font-medium">Zavz Injector</span>
+             <span className="text-xs text-gray-500 font-medium">ZAVZ Injector</span>
         </div>
 
         <ProcessSelectionModal
