@@ -30,10 +30,11 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "category": "Utility",
     "icon": [
-      "icons/icon.ico"
+      "icons/icon.ico",
+      "icons/icon.png"
     ],
     "targets": "all",
     "resources": [

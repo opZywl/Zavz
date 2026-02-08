@@ -39,9 +39,12 @@ export const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose, fdp
 
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 relative z-10">
-            <div>
-                <h2 className="text-white font-bold text-xl tracking-tight">Client Configuration</h2>
-                <p className="text-gray-500 text-xs mt-1">Select your target jar file for injection</p>
+            <div className="flex items-center gap-3">
+                <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-8 h-8 object-contain" />
+                <div>
+                    <h2 className="text-white font-bold text-xl tracking-tight">Client Configuration</h2>
+                    <p className="text-gray-500 text-xs mt-1">Select your target jar file for injection</p>
+                </div>
             </div>
             <button 
                 onClick={onClose} 

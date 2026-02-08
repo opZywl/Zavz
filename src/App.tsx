@@ -6,7 +6,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Header } from './components/Header';
 import { NewsCard } from './components/NewsCard';
 import { UpdateCard } from './components/UpdateCard';
-import { InjectorIcon, MinecraftIcon, ZIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
+import { InjectorIcon, ZIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
 import { ExternalLink, ChevronDown } from 'lucide-react';
 import { ThemeModal } from './components/ThemeModal';
 import { VersionModal } from './components/VersionModal';
@@ -384,7 +384,7 @@ const App = () => {
                          <span className="text-[10px] text-gray-500">Injector</span>
                     </div>
                     <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-3 flex flex-col items-center justify-center gap-2 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-28 group">
-                         <MinecraftIcon />
+                         <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-10 h-10 object-contain drop-shadow-lg" />
                          <span className="text-sm font-bold text-white mt-1 group-hover:text-[var(--accent-400)]">.jar</span>
                          <span className="text-[10px] text-gray-500">Minecraft</span>
                     </div>
