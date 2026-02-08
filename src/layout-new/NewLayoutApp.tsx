@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { resolveResource } from '@tauri-apps/api/path';
@@ -195,10 +195,7 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isInjectionModalOpen, setIsInjectionModalOpen] = useState(false);
 
-  // Dragging state (browser-based)
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartPos = useRef({ x: 0, y: 0 });
+  // Dragging via Tauri native API
 
   // Injection state (Tauri integration)
   const [targetProcess, setTargetProcess] = useState('javaw.exe');
@@ -331,51 +328,20 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
     if (item.category === 'Interface') setIsThemeModalOpen(true);
   };
 
-  // ---- Browser-based Dragging ----
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // ---- Tauri Native Drag ----
+  const handleDrag = async (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('input') || target.closest('a') || target.closest('.no-drag') || target.closest('[role="button"]')) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const yWithinHeader = e.clientY - rect.top < 112;
-
-    if (yWithinHeader) {
-      setIsDragging(true);
-      dragStartPos.current = {
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      };
-    }
+    try { await getCurrentWindow().startDragging(); } catch {}
   };
 
-  useEffect(() => {
-    const handleWindowMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragStartPos.current.x,
-          y: e.clientY - dragStartPos.current.y
-        });
-      }
-    };
-    const handleWindowMouseUp = () => { setIsDragging(false); };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleWindowMouseMove);
-      window.addEventListener('mouseup', handleWindowMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleWindowMouseMove);
-      window.removeEventListener('mouseup', handleWindowMouseUp);
-    };
-  }, [isDragging]);
-
   return (
-    <div style={appStyle} className="h-screen w-screen flex flex-col text-white selection:bg-[var(--accent-500-30)] overflow-hidden relative font-sans transition-colors duration-500">
+    <div style={appStyle} className="h-screen w-screen flex flex-col items-center justify-center text-white selection:bg-[var(--accent-500-30)] overflow-hidden relative font-sans transition-colors duration-500 bg-transparent">
 
-      {/* Main App Window - fills entire screen */}
+      {/* Main App Window */}
       <div
-        className="w-full h-full bg-[#09090b] flex flex-col relative overflow-hidden cursor-default"
-        onMouseDown={handleMouseDown}
+        className="w-[1100px] h-[720px] bg-[#09090b] rounded-[24px] shadow-2xl flex flex-col relative overflow-hidden border border-white/5 z-10 backdrop-blur-sm cursor-default"
+        onMouseDown={handleDrag}
       >
 
         <Header onOpenSettings={() => setIsSettingsModalOpen(true)} />
