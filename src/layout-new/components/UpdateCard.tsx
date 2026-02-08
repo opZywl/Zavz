@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const UpdateCard = () => {
   return (
     <div className="w-full relative h-[140px] rounded-xl overflow-hidden bg-gradient-to-r from-[var(--accent-700)] to-[var(--accent-600)] shadow-xl cursor-pointer hover:scale-[1.02] transition-all duration-300 group">

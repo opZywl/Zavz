@@ -14,7 +14,7 @@ interface InjectionModalProps {
 type Step = 'select' | 'manual' | 'injecting' | 'success';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const InjectionModal: React.FC<InjectionModalProps> = ({ isOpen, onClose, onInject, dllPath, setDllPath, fdpMode, setFdpMode }) => {
+export const InjectionModal: React.FC<InjectionModalProps> = ({ isOpen, onClose, onInject, dllPath: _dllPath, setDllPath, fdpMode: _fdpMode, setFdpMode }) => {
   if (!isOpen) return null;
 
   const [step, setStep] = useState<Step>('select');
