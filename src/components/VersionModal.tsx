@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, File, Folder, Save, Download, ExternalLink } from 'lucide-react';
-import { openUrl } from '@tauri-apps/plugin-opener';
+import { openExternal } from '../utils/openExternal';
 
 interface VersionModalProps {
   isOpen: boolean;
@@ -60,7 +60,7 @@ export const VersionModal: React.FC<VersionModalProps> = ({ isOpen, onClose, fdp
             
             {/* Download Banner - NEW */}
             <div 
-                onClick={() => openUrl('https://fdpinfo.github.io/download').catch(() => window.open('https://fdpinfo.github.io/download', '_blank'))}
+                onClick={() => openExternal('https://fdpinfo.github.io/download')}
                 className="p-4 rounded-xl bg-[#18181b] border border-white/10 hover:border-[var(--accent-500)] cursor-pointer group transition-all flex items-center gap-4 shadow-lg"
             >
                 <div className="w-10 h-10 rounded-lg bg-[var(--accent-500-20)] flex items-center justify-center text-[var(--accent-500)] group-hover:scale-110 transition-transform">

@@ -9,7 +9,7 @@ import { UpdateCard } from './components/UpdateCard';
 import { InjectorIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
 import { NicknameModal } from './components/NicknameModal';
 import { ExternalLink, ChevronDown } from 'lucide-react';
-import { openUrl } from '@tauri-apps/plugin-opener';
+import { openExternal } from './utils/openExternal';
 import { ThemeModal } from './components/ThemeModal';
 import { VersionModal } from './components/VersionModal';
 import { ClientSelectionModal } from './components/ClientSelectionModal';
@@ -181,7 +181,7 @@ const newsItems: NewsItem[] = [
 // ---- Social Link Component with Tooltip (opens in system browser) ----
 const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: string, link?: string }) => (
     <button
-        onClick={() => { if (link) openUrl(link).catch(() => window.open(link, '_blank')); }}
+        onClick={() => { if (link) openExternal(link); }}
         className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[var(--accent-400)] transition-colors relative group"
     >
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[var(--accent-500)] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none transform translate-y-2 group-hover:translate-y-0 whitespace-nowrap shadow-lg z-50">
@@ -357,7 +357,7 @@ const App = () => {
 
   // ---- News Actions ----
   const handleNewsAction = (item: NewsItem) => {
-    if (item.url) { openUrl(item.url).catch(() => window.open(item.url, '_blank')); return; }
+    if (item.url) { openExternal(item.url); return; }
     if (item.category === 'Interface') setIsThemeModalOpen(true);
   };
 
@@ -455,7 +455,7 @@ const App = () => {
                  <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" link="https://www.youtube.com/@opZywl" />
 
                  <button
-                    onClick={() => openUrl('https://lucas-lima.vercel.app/').catch(() => window.open('https://lucas-lima.vercel.app/', '_blank'))}
+                    onClick={() => openExternal('https://lucas-lima.vercel.app/')}
                     className="relative flex items-center gap-2 pl-3 pr-4 py-1.5 ml-2 rounded-lg overflow-hidden group bg-[#18181b]"
                  >
                     <div className="absolute inset-0 bg-[var(--accent-600)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
