@@ -12,12 +12,12 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "YZY Injector v2",
+        "title": "ZAVZ Injector",
         "label": "main",
-        "width": 1400,
-        "height": 900,
-        "minWidth": 1200,
-        "minHeight": 800,
+        "width": 1100,
+        "minWidth": 1000,
+        "height": 670,
+        "minHeight": 670,
         "resizable": true,
         "fullscreen": false,
         "center": true,
