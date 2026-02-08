@@ -6,7 +6,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Header } from './components/Header';
 import { NewsCard } from './components/NewsCard';
 import { UpdateCard } from './components/UpdateCard';
-import { InjectorIcon, ZIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
+import { InjectorIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
+import { NicknameModal } from './components/NicknameModal';
 import { ExternalLink, ChevronDown } from 'lucide-react';
 import { ThemeModal } from './components/ThemeModal';
 import { VersionModal } from './components/VersionModal';
@@ -187,6 +188,14 @@ const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: strin
 
 // ---- Main Component ----
 const App = () => {
+  // Nickname state (persisted in localStorage)
+  const [nickname, setNickname] = useState<string>(() => localStorage.getItem('yzy-nickname') || '');
+
+  const handleNicknameConfirm = (name: string) => {
+    localStorage.setItem('yzy-nickname', name);
+    setNickname(name);
+  };
+
   // Theme state
   const [currentThemeKey, setCurrentThemeKey] = useState<string>('red');
   const [customHex, setCustomHex] = useState<string>('#ef4444');
@@ -353,10 +362,19 @@ const App = () => {
     try { await getCurrentWindow().startDragging(); } catch {}
   };
 
+  // Show nickname screen if not set
+  if (!nickname) {
+    return (
+      <div style={appStyle} className="h-screen w-screen bg-[#09090b] flex flex-col relative overflow-hidden text-white selection:bg-[var(--accent-500-30)] font-sans transition-colors duration-500 cursor-default">
+        <NicknameModal onConfirm={handleNicknameConfirm} />
+      </div>
+    );
+  }
+
   return (
     <div style={appStyle} className="h-screen w-screen bg-[#09090b] flex flex-col relative overflow-hidden text-white selection:bg-[var(--accent-500-30)] font-sans transition-colors duration-500 cursor-default">
 
-        <Header onOpenSettings={() => setIsSettingsModalOpen(true)} onDrag={handleDrag} />
+        <Header nickname={nickname} onOpenSettings={() => setIsSettingsModalOpen(true)} onDrag={handleDrag} />
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 px-10 pb-4 pt-0 flex gap-8 overflow-hidden">
@@ -425,7 +443,6 @@ const App = () => {
         {/* Footer Bar */}
         <div className="px-10 h-[88px] flex items-center justify-end relative z-30 bg-[#09090b] border-t border-white/5">
              <div className="flex items-center bg-[#0e0e11] p-1.5 rounded-lg border border-white/5 shadow-lg">
-                 <SocialLink icon={<ZIcon className="w-6 h-6" />} label="Zavz" />
                  <SocialLink icon={<GithubIcon className="w-5 h-5" />} label="GitHub" />
                  <SocialLink icon={<DiscordIcon className="w-5 h-5" />} label="Discord" />
                  <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" />
