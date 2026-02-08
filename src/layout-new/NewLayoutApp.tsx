@@ -336,7 +336,7 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
   };
 
   return (
-    <div style={appStyle} className="w-full h-full bg-[#09090b] flex flex-col relative overflow-hidden text-white selection:bg-[var(--accent-500-30)] font-sans transition-colors duration-500 cursor-default">
+    <div style={appStyle} className="h-screen w-screen bg-[#09090b] flex flex-col relative overflow-hidden text-white selection:bg-[var(--accent-500-30)] font-sans transition-colors duration-500 cursor-default">
 
         <Header onOpenSettings={() => setIsSettingsModalOpen(true)} onDrag={handleDrag} />
 
@@ -349,10 +349,10 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
         </button>
 
         {/* Content Area */}
-        <div className="flex-1 px-10 pb-4 pt-0 flex gap-8 h-full overflow-hidden">
+        <div className="flex-1 min-h-0 px-10 pb-4 pt-0 flex gap-8 overflow-hidden">
 
           {/* Left Column */}
-          <div className="w-[340px] flex flex-col h-full pt-2">
+          <div className="w-[340px] flex flex-col min-h-0 pt-2">
             <UpdateCard />
 
             <div className="mt-5 mb-8 pl-1">
@@ -390,7 +390,7 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
           </div>
 
           {/* Right Column (News Grid) */}
-          <div className="flex-1 relative group/news h-full">
+          <div className="flex-1 relative group/news min-h-0">
              <div className="absolute inset-0 overflow-y-auto pr-2 pb-14 scrollbar-thin pt-2">
                 <div className="grid grid-cols-2 gap-4">
                     {newsItems.map((item) => (
