@@ -3,15 +3,16 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface HeaderProps {
     onOpenSettings?: () => void;
+    onDrag?: (e: React.MouseEvent) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
   const handleClose = async () => {
     try { await getCurrentWindow().close(); } catch {}
   };
 
   return (
-    <div className="flex items-center justify-between px-10 py-6 w-full select-none z-20 relative shrink-0">
+    <div className="flex items-center justify-between px-10 py-6 w-full select-none z-20 relative shrink-0" onMouseDown={onDrag}>
       {/* Left: Logo */}
       <div className="flex items-center gap-3 group cursor-pointer">
         <div className="transform transition-transform group-hover:rotate-12 duration-300">

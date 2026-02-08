@@ -336,21 +336,14 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
   };
 
   return (
-    <div style={appStyle} className="h-screen w-screen flex flex-col items-center justify-center text-white selection:bg-[var(--accent-500-30)] overflow-hidden relative font-sans transition-colors duration-500 bg-transparent">
+    <div style={appStyle} className="w-full h-full bg-[#09090b] flex flex-col relative overflow-hidden text-white selection:bg-[var(--accent-500-30)] font-sans transition-colors duration-500 cursor-default">
 
-      {/* Main App Window */}
-      <div
-        className="w-[1100px] h-[720px] bg-[#09090b] rounded-[24px] shadow-2xl flex flex-col relative overflow-hidden border border-white/5 z-10 backdrop-blur-sm cursor-default"
-        onMouseDown={handleDrag}
-      >
-
-        <Header onOpenSettings={() => setIsSettingsModalOpen(true)} />
+        <Header onOpenSettings={() => setIsSettingsModalOpen(true)} onDrag={handleDrag} />
 
         {/* Switch to classic layout */}
         <button
           onClick={onSwitchLayout}
           className="absolute top-5 right-24 z-30 text-[10px] text-gray-500 hover:text-[var(--accent-400)] transition-colors uppercase tracking-wider font-bold"
-          onMouseDown={e => e.stopPropagation()}
         >
           Classic View
         </button>
@@ -487,7 +480,6 @@ const NewLayoutApp: React.FC<NewLayoutAppProps> = ({ onSwitchLayout }) => {
           isCustom={isCustom}
           setIsCustom={setIsCustom}
         />
-      </div>
     </div>
   );
 };
