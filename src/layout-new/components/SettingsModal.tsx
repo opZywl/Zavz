@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Folder, ExternalLink, ChevronDown, Check, Activity, Terminal, List } from 'lucide-react';
+import { X, Folder, ExternalLink, ChevronDown, Check, Activity, Terminal, List, Play, Eye, MessageSquare, Power } from 'lucide-react';
 import { ProcessSelectionModal } from './ProcessSelectionModal';
 
 interface SettingsModalProps {
@@ -13,10 +13,23 @@ interface SettingsModalProps {
   setJvmArgs: (args: string) => void;
   watcherActive: boolean;
   onWatcherToggle: (enabled: boolean) => void;
+  autoClose: boolean;
+  setAutoClose: (v: boolean) => void;
+  streamerMode: boolean;
+  setStreamerMode: (v: boolean) => void;
+  discordRpc: boolean;
+  setDiscordRpc: (v: boolean) => void;
   onSave: () => void;
+  onLaunchJvm: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, targetProcess, setTargetProcess, injectionMethod, setInjectionMethod, jvmArgs, setJvmArgs, watcherActive, onWatcherToggle, onSave }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen, onClose, targetProcess, setTargetProcess,
+  injectionMethod, setInjectionMethod, jvmArgs, setJvmArgs,
+  watcherActive, onWatcherToggle, autoClose, setAutoClose,
+  streamerMode, setStreamerMode, discordRpc, setDiscordRpc,
+  onSave, onLaunchJvm
+}) => {
   if (!isOpen) return null;
 
   const [activeTab, setActiveTab] = useState<'General' | 'Preferences'>('General');
@@ -25,7 +38,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
   const [jvmDistribution, setJvmDistribution] = useState('Automatic');
   const [memory, setMemory] = useState(4096);
   const [jvmArgsEnabled, setJvmArgsEnabled] = useState(true);
-  const [keepRunning, setKeepRunning] = useState(false);
 
   // Method display mapping
   const methodDisplayMap: Record<string, string> = {
@@ -54,9 +66,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
       "Reflective Loader (Self-Mapping)"
   ];
 
-  // Reusable Toggle Component for consistency
   const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
-      <button 
+      <button
         onClick={onChange}
         className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${checked ? 'bg-[var(--accent-500)]' : 'bg-[#3f3f46]'}`}
       >
@@ -66,16 +77,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div 
-        className="bg-[#0f0f11]/95 w-[600px] rounded-xl shadow-2xl overflow-hidden flex flex-col font-sans text-white border border-white/10" 
+      <div
+        className="bg-[#0f0f11]/95 w-[600px] max-h-[85vh] rounded-xl shadow-2xl overflow-hidden flex flex-col font-sans text-white border border-white/10"
         onClick={(e) => {
             e.stopPropagation();
             setIsMethodDropdownOpen(false);
         }}
       >
-        
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5">
+        <div className="flex items-center justify-between px-6 py-5 shrink-0">
             <h2 className="text-xl font-medium">Settings</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                 <X size={24} />
@@ -83,14 +94,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center px-6 border-b border-white/10">
-            <button 
+        <div className="flex items-center px-6 border-b border-white/10 shrink-0">
+            <button
                 onClick={() => setActiveTab('General')}
                 className={`pb-3 px-8 text-sm font-medium transition-colors border-b-2 ${activeTab === 'General' ? 'border-[var(--accent-500)] text-white' : 'border-transparent text-gray-400 hover:text-gray-300'}`}
             >
                 General
             </button>
-            <button 
+            <button
                  onClick={() => setActiveTab('Preferences')}
                  className={`pb-3 px-8 text-sm font-medium transition-colors border-b-2 ${activeTab === 'Preferences' ? 'border-[var(--accent-500)] text-white' : 'border-transparent text-gray-400 hover:text-gray-300'}`}
             >
@@ -98,15 +109,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
             </button>
         </div>
 
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
+
         {/* Content - General */}
         {activeTab === 'General' && (
             <div className="p-6 space-y-6">
-                
+
                 {/* JVM Distribution */}
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-200">JVM Distribution</label>
                     <div className="relative">
-                        <select 
+                        <select
                             value={jvmDistribution}
                             onChange={(e) => setJvmDistribution(e.target.value)}
                             className="w-full bg-[#18181b] border border-white/10 rounded-md px-3 py-2 text-sm text-gray-300 appearance-none focus:outline-none focus:border-[var(--accent-500)] cursor-pointer"
@@ -123,8 +137,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-200">Data Location</label>
                     <div className="flex gap-2">
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             defaultValue="C:\Users\yzy\AppData\Roaming\CCBlueX\LiquidLauncher"
                             className="flex-1 bg-[#18181b] border border-white/10 rounded-md px-3 py-2 text-sm text-gray-400 focus:outline-none font-mono truncate"
                             readOnly
@@ -144,10 +158,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                         <label className="text-sm font-medium text-gray-200">Memory</label>
                         <span className="text-sm text-gray-200 font-medium">{memory} MB</span>
                     </div>
-                    <input 
-                        type="range" 
-                        min="1024" 
-                        max="16384" 
+                    <input
+                        type="range"
+                        min="1024"
+                        max="16384"
                         step="1024"
                         value={memory}
                         onChange={(e) => setMemory(parseInt(e.target.value))}
@@ -170,10 +184,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                     />
                 </div>
 
-                {/* Keep Launcher Running */}
-                <div className="flex items-center gap-3 pt-2">
-                     <ToggleSwitch checked={keepRunning} onChange={() => setKeepRunning(!keepRunning)} />
-                     <span className="text-sm text-gray-200 font-medium">Keep launcher running</span>
+                {/* Launch JVM Button */}
+                <button
+                    onClick={onLaunchJvm}
+                    className="w-full flex items-center justify-center gap-2 bg-[#18181b] hover:bg-[#27272a] border border-white/10 hover:border-[var(--accent-500)] text-gray-200 hover:text-white font-bold py-2.5 rounded-md transition-all text-sm"
+                >
+                    <Play size={14} className="text-[var(--accent-500)]" />
+                    Launch Java with Arguments
+                </button>
+
+                {/* Auto-Close After Injection */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#18181b]/50 border border-white/5 hover:border-white/10 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <Power size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-200 font-medium">Auto-close after injection</span>
+                    </div>
+                    <ToggleSwitch checked={autoClose} onChange={() => setAutoClose(!autoClose)} />
+                </div>
+
+                {/* Streamer Mode */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#18181b]/50 border border-white/5 hover:border-white/10 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <Eye size={16} className="text-gray-400" />
+                        <div className="flex flex-col">
+                            <span className="text-sm text-gray-200 font-medium">Streamer Mode</span>
+                            <span className="text-[10px] text-gray-500">Hide sensitive information</span>
+                        </div>
+                    </div>
+                    <ToggleSwitch checked={streamerMode} onChange={() => setStreamerMode(!streamerMode)} />
+                </div>
+
+                {/* Discord RPC */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#18181b]/50 border border-white/5 hover:border-white/10 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <MessageSquare size={16} className="text-gray-400" />
+                        <div className="flex flex-col">
+                            <span className="text-sm text-gray-200 font-medium">Discord Rich Presence</span>
+                            <span className="text-[10px] text-gray-500">Show status on Discord profile</span>
+                        </div>
+                    </div>
+                    <ToggleSwitch checked={discordRpc} onChange={() => setDiscordRpc(!discordRpc)} />
                 </div>
 
                 {/* Buttons */}
@@ -194,7 +244,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
         {/* Content - Preferences */}
         {activeTab === 'Preferences' && (
              <div className="p-6 space-y-6">
-                
+
                 {/* Process Target Selection */}
                 <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
@@ -208,7 +258,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                            className="flex-1 bg-[#0f0f11] border border-white/10 rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-[var(--accent-500)] transition-colors"
                            placeholder="javaw.exe"
                         />
-                        <button 
+                        <button
                             onClick={() => setIsProcessSelectorOpen(true)}
                             className="bg-[#18181b] hover:bg-[#27272a] border border-white/10 hover:border-[var(--accent-500)] text-[var(--accent-500)] w-12 rounded-lg flex items-center justify-center transition-all shadow-lg active:scale-95"
                         >
@@ -221,7 +271,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                 <div className="space-y-2 relative z-20">
                     <label className="text-sm font-medium text-gray-200">Injection Method</label>
                     <div className="relative">
-                        <button 
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setIsMethodDropdownOpen(!isMethodDropdownOpen);
@@ -290,12 +340,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
              </div>
         )}
 
+        </div>
+
         {/* Footer */}
-        <div className="px-6 py-4 mt-auto border-t border-white/5 bg-[#0f0f11]">
+        <div className="px-6 py-4 shrink-0 border-t border-white/5 bg-[#0f0f11]">
              <span className="text-xs text-gray-500 font-medium">Zavz Injector</span>
         </div>
 
-        <ProcessSelectionModal 
+        <ProcessSelectionModal
             isOpen={isProcessSelectorOpen}
             onClose={() => setIsProcessSelectorOpen(false)}
             onSelect={(proc) => setTargetProcess(proc)}

@@ -1,4 +1,5 @@
 import { Settings, X, ZavzLogo } from './Icons';
+import { Minus } from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface HeaderProps {
@@ -9,6 +10,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
   const handleClose = async () => {
     try { await getCurrentWindow().close(); } catch {}
+  };
+  const handleMinimize = async () => {
+    try { await getCurrentWindow().minimize(); } catch {}
   };
 
   return (
@@ -54,6 +58,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSettings, onDrag }) => {
           <Settings size={18} className="text-gray-400 group-hover:text-[var(--accent-500)] group-hover:rotate-90 transition-all duration-500" />
         </div>
 
+        <button
+          onClick={handleMinimize}
+          className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all"
+        >
+          <Minus size={20} />
+        </button>
         <button
           onClick={handleClose}
           className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center text-gray-400 hover:bg-[var(--accent-600)] hover:text-white hover:border-[var(--accent-600)] transition-all"

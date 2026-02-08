@@ -201,6 +201,8 @@ const NewLayoutApp = () => {
   const [fdpPath, setFdpPath] = useState('release.jar');
   const [jvmArgs, setJvmArgs] = useState('-Xmx4G -XX:+UseG1GC -noverify');
   const [autoClose, setAutoClose] = useState(false);
+  const [streamerMode, setStreamerMode] = useState(false);
+  const [discordRpc, setDiscordRpc] = useState(true);
   const [watcherActive, setWatcherActive] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
@@ -295,7 +297,7 @@ const NewLayoutApp = () => {
         'Thread Hijack': 'thread_hijack', 'Reflective': 'reflective',
       };
       await invoke('save_settings', {
-        settings: { jvmArgs, injectionMethod: methodMap[injectionMethod] || 'standard', autoClose, randomWindowTitle: false, fdpJarPath: fdpPath, fdpWrapper: 'lunar' }
+        settings: { jvmArgs, injectionMethod: methodMap[injectionMethod] || 'standard', autoClose, randomWindowTitle: streamerMode, fdpJarPath: fdpPath, fdpWrapper: 'lunar' }
       });
       addLog('Settings saved!', 'success');
     } catch (error) {
@@ -315,6 +317,20 @@ const NewLayoutApp = () => {
     } else {
       try { const result = await invoke<string>('stop_watcher'); addLog(result, 'warning'); }
       catch (error) { addLog(`Stop failed: ${error instanceof Error ? error.message : String(error)}`, 'error'); }
+    }
+  };
+
+  const handleLaunchJvm = async () => {
+    if (!fdpPath) { addLog('No JAR file selected.', 'error'); return; }
+    addLog(`Launching Java with arguments: ${jvmArgs}`, 'info');
+    addLog(`JAR path: ${fdpPath}`, 'system');
+    try {
+      const result = await invoke<string>('launch_jvm', {
+        request: { jarPath: fdpPath, jvmArgs }
+      });
+      addLog(result, 'success');
+    } catch (error) {
+      addLog(`Failed to launch JVM: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 
@@ -449,7 +465,14 @@ const NewLayoutApp = () => {
           setJvmArgs={setJvmArgs}
           watcherActive={watcherActive}
           onWatcherToggle={handleWatcherToggle}
+          autoClose={autoClose}
+          setAutoClose={setAutoClose}
+          streamerMode={streamerMode}
+          setStreamerMode={setStreamerMode}
+          discordRpc={discordRpc}
+          setDiscordRpc={setDiscordRpc}
           onSave={handleSaveSettings}
+          onLaunchJvm={handleLaunchJvm}
         />
         <VersionModal
           isOpen={isVersionModalOpen}
