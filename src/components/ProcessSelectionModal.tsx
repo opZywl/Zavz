@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Search, RefreshCw, Cpu } from 'lucide-react';
+import { X, Search, RefreshCw, Cpu } from './Icons';
 import { invoke } from '@tauri-apps/api/core';
 
 interface Process {

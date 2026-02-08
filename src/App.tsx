@@ -6,9 +6,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Header } from './components/Header';
 import { NewsCard } from './components/NewsCard';
 import { UpdateCard } from './components/UpdateCard';
-import { InjectorIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon } from './components/Icons';
+import { InjectorIcon, GithubIcon, DiscordIcon, TwitterIcon, YoutubeIcon, ExternalLink, ChevronDown } from './components/Icons';
 import { NicknameModal } from './components/NicknameModal';
-import { ExternalLink, ChevronDown } from 'lucide-react';
 import { openExternal } from './utils/openExternal';
 import { ThemeModal } from './components/ThemeModal';
 import { VersionModal } from './components/VersionModal';
@@ -143,13 +142,13 @@ const newsItems: NewsItem[] = [
   {
     id: '1', category: 'Client', title: 'FDPCLIENT', date: '10/11/2025',
     description: 'b16 released changelog. Check out the new features and improvements.',
-    imageUrl: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=800&auto=format&fit=crop',
+    imageUrl: '/img/icon/social/fdp-logo.png',
     linkText: 'Download', url: 'https://fdpinfo.github.io/next/'
   },
   {
     id: '2', category: 'Interface', title: 'Interface Customization is Live', date: '24/10/2025',
     description: 'Customize your injector experience with our new dynamic theming engine. Click to edit.',
-    imageUrl: 'https://images.unsplash.com/photo-1558494949-efdeb6bf80d1?q=80&w=800&auto=format&fit=crop',
+    imageUrl: '/img/card/color.jpg',
     linkText: 'Customize'
   },
   {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Palette, X, Check, Sliders, Droplet } from 'lucide-react';
+import { Palette, X, Check, Sliders, Droplet } from './Icons';
 
 export interface ThemeColors {
   [key: number]: string;

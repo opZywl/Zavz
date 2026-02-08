@@ -1,5 +1,4 @@
-import { Settings, X, ZavzLogo } from './Icons';
-import { Minus } from 'lucide-react';
+import { Settings, X, ZavzLogo, Minus } from './Icons';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface HeaderProps {

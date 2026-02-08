@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, FileCode, Zap, CheckCircle } from 'lucide-react';
+import { X, FileCode, Zap, CheckCircle } from './Icons';
 
 interface InjectionModalProps {
   isOpen: boolean;
