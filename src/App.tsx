@@ -159,16 +159,12 @@ const defaultNewsItems: NewsItem[] = [
   { id: '6', category: 'Script', title: '', description: '', imageUrl: '', date: '', linkText: 'Coming Soon' }
 ];
 
-// ---- Social Link Component with Tooltip (opens in system browser) ----
-const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: string, link?: string }) => (
+// ---- Social Link Component (opens in system browser) ----
+const SocialLink = ({ icon, link }: { icon: React.ReactNode, link?: string }) => (
     <button
         onClick={() => { if (link) openExternal(link); }}
-        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[var(--accent-400)] transition-colors relative group"
+        className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-white transition-colors duration-200"
     >
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[var(--accent-500)] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none transform translate-y-2 group-hover:translate-y-0 whitespace-nowrap shadow-lg z-50">
-            {label}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[var(--accent-500)] rotate-45"></div>
-        </div>
         {icon}
     </button>
 );
@@ -400,53 +396,49 @@ const App = () => {
         <Header nickname={nickname} onOpenSettings={() => setIsSettingsModalOpen(true)} onDrag={handleDrag} />
 
         {/* Content Area */}
-        <div className="flex-1 min-h-0 px-10 pb-4 pt-0 flex gap-8 overflow-hidden">
+        <div className="flex-1 min-h-0 px-8 pb-0 pt-0 flex gap-6 overflow-hidden">
 
           {/* Left Column */}
-          <div className="w-[340px] flex flex-col min-h-0 pt-2">
+          <div className="w-[320px] flex flex-col min-h-0 pt-1">
             <UpdateCard version={appVersion} />
 
-            <div className="mt-5 mb-8 pl-1">
-               <p className="text-gray-400 text-sm font-medium mb-3 flex items-center gap-2">
-                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-500)] animate-pulse"></span>
+            <div className="mt-4 mb-6 pl-1">
+               <p className="text-gray-400 text-[13px] font-medium mb-2 flex items-center gap-2">
+                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-500)] animate-pulse shrink-0"></span>
                    fix(core): Memory leak in pipe (#992)
                </p>
-               <p className="text-gray-500 text-sm leading-relaxed">
+               <p className="text-gray-600 text-[13px] leading-relaxed">
                  Experimental build. Use at your own risk on main accounts. Integrity check passed.
                </p>
             </div>
 
-            <div className="mt-auto space-y-2.5 mb-1">
-                 {/* Version Selectors - Compact LiquidLauncher style */}
-                <div className="flex gap-2.5">
-                    <div onClick={() => setIsClientModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-2 flex items-center gap-2.5 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-14 group">
+            <div className="mt-auto space-y-3 mb-3">
+                 {/* Version Selectors - Centered vertical like LiquidBounce */}
+                <div className="flex gap-3">
+                    <div onClick={() => setIsClientModalOpen(true)} className="flex-1 bg-[#111114] rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 border border-white/[0.06] hover:border-[var(--accent-500-30)] cursor-pointer transition-all group">
                          <InjectorIcon />
-                         <div className="flex flex-col leading-tight">
-                           <span className="text-xs font-bold text-white group-hover:text-[var(--accent-400)]">Injector</span>
-                           <span className="text-[10px] text-gray-500">v1.0.0</span>
-                         </div>
+                         <span className="text-[13px] font-bold text-white mt-1 group-hover:text-[var(--accent-400)] transition-colors">{appVersion}</span>
+                         <span className="text-[10px] text-gray-500 font-medium">Injector</span>
                     </div>
-                    <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#101012] rounded-lg p-2 flex items-center gap-2.5 border border-white/5 hover:border-[var(--accent-500-30)] hover:bg-[#18181b] cursor-pointer transition-all h-14 group">
-                         <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-8 h-8 object-contain drop-shadow-lg" />
-                         <div className="flex flex-col leading-tight">
-                           <span className="text-xs font-bold text-white group-hover:text-[var(--accent-400)]">.jar</span>
-                           <span className="text-[10px] text-gray-500">Minecraft</span>
-                         </div>
+                    <div onClick={() => setIsVersionModalOpen(true)} className="flex-1 bg-[#111114] rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 border border-white/[0.06] hover:border-[var(--accent-500-30)] cursor-pointer transition-all group">
+                         <img src="/img/icon/social/icon-version-mc.png" alt="Minecraft" className="w-10 h-10 object-contain drop-shadow-lg" />
+                         <span className="text-[13px] font-bold text-white mt-1 group-hover:text-[var(--accent-400)] transition-colors">1.7 - 1.21.11</span>
+                         <span className="text-[10px] text-gray-500 font-medium">Minecraft</span>
                     </div>
                 </div>
 
                 <button
                   onClick={() => setIsInjectionModalOpen(true)}
-                  className="w-full h-10 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold text-sm rounded-lg shadow-[0_4px_20px_var(--accent-shadow)] transition-all transform active:scale-[0.98] uppercase tracking-wide"
+                  className="w-full h-12 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold text-[15px] rounded-2xl shadow-[0_4px_24px_var(--accent-shadow)] transition-all transform active:scale-[0.98] tracking-wide"
                 >
-                   Launch Injector
+                   Launch ZAVZ Injector
                 </button>
             </div>
           </div>
 
           {/* Right Column (News Grid) */}
           <div className="flex-1 relative group/news min-h-0">
-             <div className="absolute inset-0 overflow-y-auto pr-2 pb-14 scrollbar-thin pt-2">
+             <div className="absolute inset-0 overflow-y-auto pr-1 pb-12 pt-1 scrollbar-thin">
                 <div className="grid grid-cols-2 gap-4">
                     {newsItems.map((item) => (
                         <NewsCard key={item.id} item={item} onAction={handleNewsAction} />
@@ -455,37 +447,32 @@ const App = () => {
              </div>
 
              {/* Bottom Fade Gradient */}
-             <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#09090b] via-[#09090b]/90 to-transparent pointer-events-none"></div>
+             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent pointer-events-none"></div>
 
              {/* Floating Chevron */}
-             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pb-1 z-20 pointer-events-none">
-                 <div className="text-gray-500 animate-bounce transition-colors duration-[2000ms]">
-                     <ChevronDown size={28} />
+             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                 <div className="text-gray-600 animate-bounce">
+                     <ChevronDown size={26} />
                  </div>
              </div>
           </div>
 
         </div>
 
-        {/* Footer Bar */}
-        <div className="px-10 h-[88px] flex items-center justify-end relative z-30 bg-[#09090b] border-t border-white/5">
-             <div className="flex items-center bg-[#0e0e11] p-1.5 rounded-lg border border-white/5 shadow-lg">
-                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} label="GitHub" link="https://github.com/opZywl" />
-                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} label="Discord" link="https://discord.gg/3XRFGeqEYD" />
-                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} label="Twitter" link="https://fdpinfo.github.io/next/" />
-                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} label="YouTube" link="https://www.youtube.com/@opZywl" />
+        {/* Footer Bar - Compact like LiquidBounce */}
+        <div className="px-8 h-14 flex items-center justify-end relative z-30 shrink-0">
+             <div className="flex items-center gap-0.5">
+                 <SocialLink icon={<GithubIcon className="w-5 h-5" />} link="https://github.com/opZywl" />
+                 <SocialLink icon={<DiscordIcon className="w-5 h-5" />} link="https://discord.gg/3XRFGeqEYD" />
+                 <SocialLink icon={<TwitterIcon className="w-5 h-5" />} link="https://fdpinfo.github.io/next/" />
+                 <SocialLink icon={<YoutubeIcon className="w-5 h-5" />} link="https://www.youtube.com/@opZywl" />
 
                  <button
                     onClick={() => openExternal('https://lucas-lima.vercel.app/')}
-                    className="relative flex items-center gap-2 pl-3 pr-4 py-1.5 ml-2 rounded-lg overflow-hidden group bg-[#18181b]"
+                    className="flex items-center gap-2 pl-3 pr-4 py-2 ml-2 rounded-xl bg-[#141417] border border-white/[0.06] hover:border-[var(--accent-500-30)] transition-all group"
                  >
-                    <div className="absolute inset-0 bg-[var(--accent-600)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                    <div className="relative z-10 flex items-center gap-2">
-                        <div className="w-6 h-6 bg-[var(--accent-600)] group-hover:bg-white/20 rounded flex items-center justify-center transition-colors shadow-sm">
-                            <ExternalLink size={14} className="text-white" />
-                        </div>
-                        <span className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">lucas-lima.xyz</span>
-                    </div>
+                    <ExternalLink size={14} className="text-gray-500 group-hover:text-[var(--accent-400)] transition-colors" />
+                    <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">lucas-lima.xyz</span>
                 </button>
              </div>
         </div>
