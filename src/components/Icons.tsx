@@ -21,11 +21,7 @@ export {
 };
 
 export const ZavzLogo = () => (
-  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M24 48C37.2548 48 48 37.2548 48 24C48 10.7452 37.2548 0 24 0C10.7452 0 0 10.7452 0 24C0 37.2548 10.7452 48 24 48Z" fill="#18181b"/>
-    <path d="M14 14H34L28 24L34 34H14L20 24L14 14Z" fill="var(--accent-500)"/>
-    <path d="M14 14H34L28 24L34 34H14L20 24L14 14Z" stroke="var(--accent-500)" strokeWidth="2" strokeLinejoin="round"/>
-  </svg>
+  <img src="/img/icon/icon.png" alt="ZAVZ" width="48" height="48" className="object-contain" />
 );
 
 export const MinecraftIcon = () => (
