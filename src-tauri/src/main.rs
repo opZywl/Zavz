@@ -86,13 +86,14 @@ struct WatcherState {
 
 
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let config_dir = app
+    let config_root = app
         .path()
-        .app_config_dir()
-        .map_err(|err| format!("Failed to get config folder: {err}"))?;
+        .config_dir()
+        .map_err(|err| format!("Failed to get config root: {err}"))?;
+    let config_dir = config_root.join("Zavz");
     fs::create_dir_all(&config_dir)
         .map_err(|err| format!("Failed to create config folder: {err}"))?;
-    Ok(config_dir.join("yzy_injector_settings.json"))
+    Ok(config_dir.join("settings.json"))
 }
 
 fn load_settings(path: &PathBuf) -> Result<InjectorSettings, String> {

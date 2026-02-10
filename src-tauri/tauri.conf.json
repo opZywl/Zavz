@@ -1,7 +1,7 @@
 {
   "productName": "Zavz Injector",
-  "version": "2.0.0",
-  "identifier": "com.yzy.injector",
+  "version": "1.0.0",
+  "identifier": "com.zavz",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -12,12 +12,12 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Injector",
+        "title": "Zavz",
         "label": "main",
         "width": 1100,
         "minWidth": 1000,
         "height": 670,
-        "minHeight": 670,
+        "minHeight": 800,
         "resizable": true,
         "fullscreen": false,
         "center": true,

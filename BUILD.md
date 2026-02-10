@@ -27,7 +27,7 @@ CLEAN=1 ./build_all_rust.sh
 4. ✅ Copia o `.exe` final para `dist/`
 
 **Resultado:**
-- Executável: `dist/yzy-injector.exe`
+- Executável: `dist/Zavz.exe`
 - **100% standalone** (UI embarcada, não precisa de localhost)
 
 ---
@@ -63,7 +63,7 @@ cd ..
 ### **4. Localizar o Executável**
 ```bash
 # O .exe final está em:
-src-tauri/target/release/yzy-injector.exe
+src-tauri/target/release/Zavz.exe
 ```
 
 ---
@@ -139,7 +139,7 @@ Para criar um executável final otimizado:
 CLEAN=1 ./build_all_rust.sh
 
 # 2. O executável final está em:
-dist/yzy-injector.exe
+dist/Zavz.exe
 ```
 
 **Otimizações aplicadas:**
@@ -159,12 +159,12 @@ YZYInjector/
 ├── dist/                    # Frontend buildado (Vite output)
 │   ├── index.html
 │   ├── assets/
-│   └── yzy-injector.exe    # Executável final (copiado pelo script)
+│   └── Zavz.exe    # Executável final (copiado pelo script)
 │
 ├── src-tauri/
 │   └── target/
 │       └── release/
-│           └── yzy-injector.exe  # Executável original
+│           └── Zavz.exe  # Executável original
 │
 ├── node_modules/           # Dependências Node.js
 ├── package.json            # Config do frontend
