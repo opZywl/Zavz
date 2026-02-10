@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for YZY Injector window controls",
+  "description": "Default capabilities for Zavz window controls",
   "windows": ["main"],
   "permissions": [
     "core:default",

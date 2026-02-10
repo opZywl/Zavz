@@ -5,18 +5,23 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TAURI_DIR="${ROOT_DIR}/src-tauri"
 DIST_DIR="${ROOT_DIR}/dist"
 RELEASE_DIR="${ROOT_DIR}/release"
+EXPECTED_EXE_NAME="Zavz.exe"
 
 if [[ ! -f "${TAURI_DIR}/Cargo.toml" ]]; then
-  echo "Erro: ${TAURI_DIR}/Cargo.toml não encontrado. Configure o projeto Tauri primeiro."
+  echo "Erro: ${TAURI_DIR}/Cargo.toml nao encontrado. Configure o projeto Tauri primeiro."
   exit 1
 fi
 
 mkdir -p "${DIST_DIR}"
 mkdir -p "${RELEASE_DIR}"
 
-# Opção de limpeza profunda (use: CLEAN=1 ./build_all_rust.sh)
+# Remove executaveis antigos para evitar copiar binario errado
+find "${RELEASE_DIR}" -maxdepth 1 -type f -iname "*.exe" -delete 2>/dev/null || true
+find "${TAURI_DIR}/target/release" -maxdepth 1 -type f -iname "*.exe" -delete 2>/dev/null || true
+
+# Opcao de limpeza profunda (use: CLEAN=1 ./build_all_rust.sh)
 if [[ "${CLEAN:-0}" == "1" ]]; then
-  echo "==> Modo CLEAN ativado - Limpando cache do Cargo e artifacts"
+  echo "==> Modo CLEAN ativado - limpando cache do Cargo e artefatos"
   if [[ -d "${HOME}/.cargo/registry/cache" ]]; then
     echo "Removendo ${HOME}/.cargo/registry/cache"
     rm -rf "${HOME}/.cargo/registry/cache"
@@ -45,18 +50,16 @@ else
   echo "==> Build incremental (use CLEAN=1 para limpeza completa)"
 fi
 
-# Instalar dependências do Node.js se necessário
+# Instalar dependencias do Node.js se necessario
 if [[ ! -d "node_modules" ]]; then
-  echo "==> Instalando dependências do Node.js"
+  echo "==> Instalando dependencias do Node.js"
   npm install
 fi
 
-# Limpar dist/ ANTES do build do frontend (remove .exe antigos)
-echo "==> Limpando pasta dist/ de arquivos antigos"
+# Limpar dist antes do build do frontend (remove exe antigos)
+echo "==> Limpando pasta dist de arquivos antigos"
 if [[ -d "${DIST_DIR}" ]]; then
-  # Remove todos os .exe de dist/ (podem estar bloqueados)
   find "${DIST_DIR}" -name "*.exe" -delete 2>/dev/null || true
-  # Se ainda existir dist/, tenta remover tudo
   rm -rf "${DIST_DIR}" 2>/dev/null || true
 fi
 mkdir -p "${DIST_DIR}"
@@ -68,41 +71,42 @@ if [[ -f "${LOCKFILE}" ]] && grep -q "version = 4" "${LOCKFILE}"; then
   rm "${LOCKFILE}"
 fi
 
-# Configurar toolchain override temporário para este diretório
-echo "→ Configurando Rust nightly-2026-01-14..."
+# Configurar toolchain override temporario para este diretorio
+echo "-> Configurando Rust nightly-2026-01-14..."
 cd "${TAURI_DIR}"
 rustup override set nightly-2026-01-14
 cd "${ROOT_DIR}"
 
 # Usar Tauri CLI que automaticamente:
 # 1. Roda beforeBuildCommand (npm run build)
-# 2. Embarca assets de dist/ no executável
+# 2. Embarca assets de dist no executavel
 # 3. Compila o backend Rust
-echo "→ Rodando Tauri CLI (isso vai compilar frontend + backend)..."
+echo "-> Rodando Tauri CLI (isso vai compilar frontend + backend)..."
 npm run tauri build || {
-  echo "⚠️  Build do executável completou mas bundling falhou (pode ser ignorado)"
-  echo "   O executável standalone foi criado com sucesso."
+  echo "Aviso: build do executavel completou, mas bundling falhou."
+  echo "O executavel standalone pode ter sido criado com sucesso."
 }
 
 # Remover override
-echo "→ Limpando toolchain override..."
+echo "-> Limpando toolchain override..."
 cd "${TAURI_DIR}"
 rustup override unset
 cd "${ROOT_DIR}"
 
-# Encontrar o executável gerado
-EXE_PATH="$(find "${TAURI_DIR}/target/release" -maxdepth 1 -name '*.exe' -print -quit || true)"
-if [[ -z "${EXE_PATH}" ]]; then
-  echo "❌ Erro: nenhum .exe encontrado em ${TAURI_DIR}/target/release."
-  echo "   Verifique os logs de build acima."
+# Validar executavel esperado
+EXE_PATH="${TAURI_DIR}/target/release/${EXPECTED_EXE_NAME}"
+if [[ ! -f "${EXE_PATH}" ]]; then
+  echo "Erro: executavel esperado nao encontrado: ${EXE_PATH}"
+  echo "Verifique o nome do binario em src-tauri/Cargo.toml e os logs de build."
   exit 1
 fi
 
-# Copiar para release/
-cp "${EXE_PATH}" "${RELEASE_DIR}/"
+# Copiar para release com nome fixo
+cp -f "${EXE_PATH}" "${RELEASE_DIR}/${EXPECTED_EXE_NAME}"
+
 echo ""
-echo "✅ Build complete!"
-echo "📦 Executável: ${RELEASE_DIR}/$(basename "${EXE_PATH}")"
-echo "🚀 Para rodar: ./${RELEASE_DIR}/$(basename "${EXE_PATH}")"
+echo "Build complete!"
+echo "Executavel: ./release/${EXPECTED_EXE_NAME}"
+echo "Para rodar: ./release/${EXPECTED_EXE_NAME}"
 echo ""
-echo "ℹ️  O executável contém a UI embarcada (não precisa de localhost)"
+echo "O executavel contem a UI embarcada (nao precisa de localhost)"

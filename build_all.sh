@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RELEASE_DIR="${ROOT_DIR}/release"
 
-echo "Building YZY Injector (Tauri + Rust + React)..."
+echo "Building Zavz (Tauri + Rust + React)..."
 
 # Build frontend
 echo "Building React frontend..."

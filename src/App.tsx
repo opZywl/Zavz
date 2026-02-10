@@ -176,10 +176,10 @@ const SocialLink = ({ icon, label, link }: { icon: React.ReactNode, label: strin
 // ---- Main Component ----
 const App = () => {
   // Nickname state (persisted in localStorage)
-  const [nickname, setNickname] = useState<string>(() => localStorage.getItem('yzy-nickname') || '');
+  const [nickname, setNickname] = useState<string>(() => localStorage.getItem('zavz-nickname') || '');
 
   const handleNicknameConfirm = (name: string) => {
-    localStorage.setItem('yzy-nickname', name);
+    localStorage.setItem('zavz-nickname', name);
     setNickname(name);
   };
 
@@ -224,7 +224,7 @@ const App = () => {
   const [customHex, setCustomHex] = useState<string>('#c500ff');
   const [isCustom, setIsCustom] = useState(false);
   const [glowEnabled, setGlowEnabled] = useState<boolean>(() => {
-    const stored = localStorage.getItem('yzy-glow');
+    const stored = localStorage.getItem('zavz-glow');
     return stored !== null ? stored === 'true' : true;
   });
 
@@ -278,7 +278,7 @@ const App = () => {
   // ---- Tauri Effects ----
   useEffect(() => {
     if (logs.length === 0) {
-      addLog('YZY Injector v2 initialized', 'system');
+      addLog('Zavz v2 initialized', 'system');
       invoke<any>('get_settings')
         .then((settings) => {
           if (settings.jvmArgs) setJvmArgs(settings.jvmArgs);
@@ -541,7 +541,7 @@ const App = () => {
           isCustom={isCustom}
           setIsCustom={setIsCustom}
           glowEnabled={glowEnabled}
-          setGlowEnabled={(v: boolean) => { setGlowEnabled(v); localStorage.setItem('yzy-glow', String(v)); }}
+          setGlowEnabled={(v: boolean) => { setGlowEnabled(v); localStorage.setItem('zavz-glow', String(v)); }}
         />
         <UpdateAlertModal
           isOpen={showUpdateAlert}

@@ -1,4 +1,4 @@
-# 🔧 YZY Injector v2 - Build Instructions
+# 🔧 Zavz v2 - Build Instructions
 
 ## 📋 Requisitos
 
@@ -155,7 +155,7 @@ dist/Zavz.exe
 ## 📁 Estrutura de Build
 
 ```
-YZYInjector/
+Zavz/
 ├── dist/                    # Frontend buildado (Vite output)
 │   ├── index.html
 │   ├── assets/
@@ -219,7 +219,7 @@ CLEAN=1 ./build_all_rust.sh
 ## 📞 Suporte
 
 Problemas? Abra uma issue:
-https://github.com/opZywl/YZYInjector/issues
+https://github.com/opZywl/Zavz/issues
 
 ---
 
