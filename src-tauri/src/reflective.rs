@@ -1,6 +1,4 @@
 #[cfg(target_os = "windows")]
-use dll_syringe::process::OwnedProcess;
-#[cfg(target_os = "windows")]
 use std::ffi::c_void;
 #[cfg(target_os = "windows")]
 use std::fs::File;
@@ -12,6 +10,8 @@ use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
 #[cfg(target_os = "windows")]
+use dll_syringe::process::OwnedProcess;
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Diagnostics::Debug::WriteProcessMemory;
@@ -20,9 +20,7 @@ use windows_sys::Win32::System::Memory::{
     VirtualAllocEx, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
 };
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::System::Threading::{
-    CreateRemoteThread, WaitForSingleObject, INFINITE,
-};
+use windows_sys::Win32::System::Threading::{CreateRemoteThread, WaitForSingleObject, INFINITE};
 
 #[repr(C)]
 struct ImageDosHeader {
@@ -296,8 +294,7 @@ fn write_remote_memory(process: HANDLE, remote: *mut c_void, data: &[u8]) -> Res
 
 #[cfg(target_os = "windows")]
 pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), String> {
-    let mut file = File::open(dll_path)
-        .map_err(|e| format!("Failed to open DLL file: {}", e))?;
+    let mut file = File::open(dll_path).map_err(|e| format!("Failed to open DLL file: {}", e))?;
 
     let mut dll_data = Vec::new();
     file.read_to_end(&mut dll_data)
@@ -329,7 +326,9 @@ pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
             process_handle,
             std::ptr::null(),
             0,
-            Some(std::mem::transmute((remote_base as u64 + reflective_rva as u64) as *const c_void)),
+            Some(std::mem::transmute(
+                (remote_base as u64 + reflective_rva as u64) as *const c_void,
+            )),
             remote_base,
             0,
             std::ptr::null_mut(),

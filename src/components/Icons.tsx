@@ -17,7 +17,7 @@ import {
   Cpu,
   Save,
   Droplet,
-  Sliders
+  Sliders,
 } from 'lucide-react';
 
 // Re-export Lucide icons that don't have SVG equivalents
@@ -40,7 +40,7 @@ export {
   Cpu,
   Save,
   Droplet,
-  Sliders
+  Sliders,
 };
 
 // ---- SVG Icon Components (using new icon assets from public/) ----
@@ -84,35 +84,78 @@ export const ZavzLogo = () => (
 // Injector Icon
 export const InjectorIcon = () => (
   <div className="w-10 h-10 rounded-full bg-[var(--accent-600)] flex items-center justify-center relative overflow-hidden shadow-lg group">
-     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white z-10">
-        <path d="M19 12L12 19L5 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12 19V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-     </svg>
-     <div className="absolute inset-0 bg-[var(--accent-500)] opacity-50 blur-sm"></div>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="text-white z-10"
+    >
+      <path
+        d="M19 12L12 19L5 12"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 19V5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+    <div className="absolute inset-0 bg-[var(--accent-500)] opacity-50 blur-sm"></div>
   </div>
 );
 
 // Social Icons (using new SVG files from public/img/icon/social/)
 export const GithubIcon = ({ className }: { className?: string }) => (
-  <img src="/img/icon/social/icon-github.svg" alt="GitHub" className={`inline-block ${className || ''}`} />
+  <img
+    src="/img/icon/social/icon-github.svg"
+    alt="GitHub"
+    className={`inline-block ${className || ''}`}
+  />
 );
 
 export const DiscordIcon = ({ className }: { className?: string }) => (
-  <img src="/img/icon/social/icon-discord.svg" alt="Discord" className={`inline-block ${className || ''}`} />
+  <img
+    src="/img/icon/social/icon-discord.svg"
+    alt="Discord"
+    className={`inline-block ${className || ''}`}
+  />
 );
 
 export const TwitterIcon = ({ className }: { className?: string }) => (
-  <img src="/img/icon/social/icon-twitter.svg" alt="Twitter" className={`inline-block ${className || ''}`} />
+  <img
+    src="/img/icon/social/icon-twitter.svg"
+    alt="Twitter"
+    className={`inline-block ${className || ''}`}
+  />
 );
 
 export const YoutubeIcon = ({ className }: { className?: string }) => (
-  <img src="/img/icon/social/icon-youtube.svg" alt="YouTube" className={`inline-block ${className || ''}`} />
+  <img
+    src="/img/icon/social/icon-youtube.svg"
+    alt="YouTube"
+    className={`inline-block ${className || ''}`}
+  />
 );
 
 export const NodebbIcon = ({ className }: { className?: string }) => (
-  <img src="/img/icon/social/icon-nodebb.svg" alt="NodeBB" className={`inline-block ${className || ''}`} />
+  <img
+    src="/img/icon/social/icon-nodebb.svg"
+    alt="NodeBB"
+    className={`inline-block ${className || ''}`}
+  />
 );
 
 export const UrlIcon = ({ className }: { className?: string }) => (
-  <img src="/img/icon/social/icon-url.svg" alt="Link" className={`inline-block ${className || ''}`} />
+  <img
+    src="/img/icon/social/icon-url.svg"
+    alt="Link"
+    className={`inline-block ${className || ''}`}
+  />
 );

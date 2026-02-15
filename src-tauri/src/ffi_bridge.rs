@@ -2,15 +2,16 @@
 // This module provides C-compatible exports for the injection functions
 // allowing the legacy C++ code to call into the Rust backend if needed
 
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
-use std::path::PathBuf;
-
-use crate::injector;
-use crate::injection_method::InjectionMethod;
+use std::{
+    ffi::{CStr, CString},
+    os::raw::c_char,
+    path::PathBuf,
+};
 
 #[cfg(target_os = "windows")]
 use dll_syringe::process::Process;
+
+use crate::{injection_method::InjectionMethod, injector};
 
 /// C-compatible version of find_process_by_name
 /// Returns process ID or 0 if not found
@@ -120,8 +121,9 @@ pub extern "C" fn rust_free_string(s: *mut c_char) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::ffi::CString;
+
+    use super::*;
 
     #[test]
     fn test_get_proc_id_null() {
