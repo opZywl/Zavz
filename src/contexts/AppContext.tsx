@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useLogger, LogEntry } from '../hooks/useLogger';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { useLocalStorage } from '../hooks/useLocalStorage';
