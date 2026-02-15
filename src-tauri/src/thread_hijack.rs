@@ -1,12 +1,12 @@
 #[cfg(target_os = "windows")]
-use dll_syringe::process::{OwnedProcess, Process};
-#[cfg(target_os = "windows")]
 use std::ffi::{c_void, CString};
 #[cfg(target_os = "windows")]
 use std::os::windows::io::AsRawHandle;
 #[cfg(target_os = "windows")]
 use std::path::Path;
 
+#[cfg(target_os = "windows")]
+use dll_syringe::process::{OwnedProcess, Process};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 #[cfg(target_os = "windows")]
@@ -16,7 +16,7 @@ use windows_sys::Win32::System::Diagnostics::Debug::{
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Module32FirstW, Module32NextW, Thread32First, Thread32Next,
-    MODULEENTRY32W, THREADENTRY32, TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32, TH32CS_SNAPTHREAD,
+    MODULEENTRY32W, TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32, TH32CS_SNAPTHREAD, THREADENTRY32,
 };
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
@@ -57,7 +57,8 @@ fn find_thread_id(pid: u32) -> Result<u32, String> {
 
 #[cfg(target_os = "windows")]
 fn get_remote_module_base(pid: u32, module_name: &str) -> Result<u64, String> {
-    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid) };
+    let snapshot =
+        unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid) };
     if snapshot == INVALID_HANDLE_VALUE {
         return Err("Failed to create module snapshot".to_string());
     }
@@ -159,8 +160,8 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     let dll_path_str = dll_path
         .to_str()
         .ok_or_else(|| "DLL path contains invalid characters".to_string())?;
-    let dll_cstr = CString::new(dll_path_str)
-        .map_err(|_| "DLL path contains null bytes".to_string())?;
+    let dll_cstr =
+        CString::new(dll_path_str).map_err(|_| "DLL path contains null bytes".to_string())?;
 
     let process_handle = process.as_raw_handle() as HANDLE;
     let remote_string = unsafe {
@@ -202,9 +203,8 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
         return Err("Failed to get local kernel32 handle".to_string());
     }
 
-    let local_load_library =
-        unsafe { GetProcAddress(local_kernel32, b"LoadLibraryA\0".as_ptr()) }
-            .ok_or_else(|| "Failed to get local LoadLibraryA address".to_string())?;
+    let local_load_library = unsafe { GetProcAddress(local_kernel32, b"LoadLibraryA\0".as_ptr()) }
+        .ok_or_else(|| "Failed to get local LoadLibraryA address".to_string())?;
 
     let local_load_library_ptr =
         unsafe { std::mem::transmute::<_, *const c_void>(local_load_library) };
@@ -213,8 +213,8 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
     let local_kernel32_addr = local_kernel32_ptr as usize;
 
     let remote_kernel32 = get_remote_module_base(pid, "kernel32.dll")?;
-    let load_library_remote = remote_kernel32
-        + (local_load_library_addr - local_kernel32_addr) as u64;
+    let load_library_remote =
+        remote_kernel32 + (local_load_library_addr - local_kernel32_addr) as u64;
 
     let stub = build_hijack_stub(load_library_remote, remote_string as u64, context.Rip);
 

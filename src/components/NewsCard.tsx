@@ -65,7 +65,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
             {/* Top: Title + Date */}
             <div>
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-white font-bold text-[13px] leading-snug group-hover:text-[var(--accent-100)] transition-colors line-clamp-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                <h3
+                  className="text-white font-bold text-[13px] leading-snug group-hover:text-[var(--accent-100)] transition-colors line-clamp-2"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
                   {item.title}
                 </h3>
                 {item.date && (

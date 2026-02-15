@@ -51,5 +51,7 @@ export async function invokeCommand<K extends keyof TauriCommands>(
   command: K,
   args?: Parameters<TauriCommands[K]>[0]
 ): Promise<ReturnType<TauriCommands[K]>> {
-  return tauriInvoke(command, args ? { request: args } : undefined) as Promise<ReturnType<TauriCommands[K]>>;
+  return tauriInvoke(command, args ? { request: args } : undefined) as Promise<
+    ReturnType<TauriCommands[K]>
+  >;
 }

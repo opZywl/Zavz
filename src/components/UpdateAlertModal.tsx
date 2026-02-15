@@ -19,8 +19,10 @@ export const UpdateAlertModal: React.FC<UpdateAlertModalProps> = ({ isOpen, onCl
 
   return (
     <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-[#121214]/95 w-[420px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-
+      <div
+        className="bg-[#121214]/95 w-[420px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-[var(--accent-500)] opacity-10 blur-[60px] pointer-events-none"></div>
 
@@ -29,11 +31,15 @@ export const UpdateAlertModal: React.FC<UpdateAlertModalProps> = ({ isOpen, onCl
           <ZavzLogo />
 
           <div className="text-center space-y-2">
-            <h2 className="text-white font-bold text-xl" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            <h2
+              className="text-white font-bold text-xl"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
               New Update Available
             </h2>
             <p className="text-gray-400 text-sm">
-              Version <span className="text-[var(--accent-400)] font-bold">{version}</span> is now available.
+              Version <span className="text-[var(--accent-400)] font-bold">{version}</span> is now
+              available.
             </p>
             <p className="text-gray-500 text-xs">
               Update to get the latest features and bug fixes.
@@ -55,7 +61,6 @@ export const UpdateAlertModal: React.FC<UpdateAlertModalProps> = ({ isOpen, onCl
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

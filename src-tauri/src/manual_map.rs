@@ -3,8 +3,6 @@
 // without using LoadLibrary, making it harder to detect by anti-cheat systems
 
 #[cfg(target_os = "windows")]
-use dll_syringe::process::{OwnedProcess, Process};
-#[cfg(target_os = "windows")]
 use std::fs::File;
 #[cfg(target_os = "windows")]
 use std::io::Read;
@@ -12,6 +10,8 @@ use std::io::Read;
 use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
+#[cfg(target_os = "windows")]
+use dll_syringe::process::{OwnedProcess, Process};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Memory::{
     VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
@@ -97,8 +97,7 @@ struct ImageOptionalHeader64 {
 #[cfg(target_os = "windows")]
 pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), String> {
     // Read DLL file into memory
-    let mut file = File::open(dll_path)
-        .map_err(|e| format!("Failed to open DLL file: {}", e))?;
+    let mut file = File::open(dll_path).map_err(|e| format!("Failed to open DLL file: {}", e))?;
 
     let mut dll_data = Vec::new();
     file.read_to_end(&mut dll_data)
@@ -110,9 +109,7 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
     }
 
     // Parse DOS header
-    let dos_header = unsafe {
-        &*(dll_data.as_ptr() as *const ImageDosHeader)
-    };
+    let dos_header = unsafe { &*(dll_data.as_ptr() as *const ImageDosHeader) };
 
     if dos_header.e_magic != 0x5A4D {
         return Err("Invalid DLL file: not a valid PE file (bad DOS signature)".to_string());
@@ -124,9 +121,8 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
         return Err("Invalid DLL file: NT headers out of bounds".to_string());
     }
 
-    let nt_headers = unsafe {
-        &*(dll_data.as_ptr().add(nt_headers_offset) as *const ImageNtHeaders64)
-    };
+    let nt_headers =
+        unsafe { &*(dll_data.as_ptr().add(nt_headers_offset) as *const ImageNtHeaders64) };
 
     if nt_headers.signature != 0x00004550 {
         return Err("Invalid DLL file: bad NT signature".to_string());
@@ -160,15 +156,13 @@ pub fn manual_map_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
 
     // Cleanup: free allocated memory
     unsafe {
-        VirtualFreeEx(
-            process.as_raw_handle() as _,
-            remote_base,
-            0,
-            MEM_RELEASE,
-        );
+        VirtualFreeEx(process.as_raw_handle() as _, remote_base, 0, MEM_RELEASE);
     }
 
-    Err("Manual Map injection is not yet fully implemented. Use Standard injection instead.".to_string())
+    Err(
+        "Manual Map injection is not yet fully implemented. Use Standard injection instead."
+            .to_string(),
+    )
 }
 
 #[cfg(test)]

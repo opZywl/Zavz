@@ -1,18 +1,15 @@
-use std::fs;
-use std::path::{Path, PathBuf};
-use sysinfo::System;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[cfg(target_os = "windows")]
 use dll_syringe::{process::OwnedProcess, Syringe};
+use sysinfo::System;
+#[cfg(target_os = "windows")]
+use {std::ptr, winapi::shared::minwindef::FALSE, winapi::um::wow64apiset::IsWow64Process};
 
 use crate::injection_method::InjectionMethod;
-
-#[cfg(target_os = "windows")]
-use {
-    std::ptr,
-    winapi::um::wow64apiset::IsWow64Process,
-    winapi::shared::minwindef::FALSE,
-};
 
 /// Validates DLL architecture against target process
 #[cfg(target_os = "windows")]
@@ -39,8 +36,7 @@ pub fn validate_dll_architecture(dll_path: &Path, process: &OwnedProcess) -> Res
 fn is_pe_64bit(path: &Path) -> Result<bool, String> {
     use std::io::{Read, Seek, SeekFrom};
 
-    let mut file = fs::File::open(path)
-        .map_err(|e| format!("Failed to open DLL: {}", e))?;
+    let mut file = fs::File::open(path).map_err(|e| format!("Failed to open DLL: {}", e))?;
 
     // Read DOS header
     let mut dos_header = [0u8; 64];
@@ -110,16 +106,18 @@ fn is_process_64bit(process: &OwnedProcess) -> Result<bool, String> {
 /// Based on UWPDumper by Wunkolo
 #[cfg(target_os = "windows")]
 pub fn set_access_control(file_path: &Path, sid_string: &str) -> Result<(), String> {
-    use std::ffi::OsStr;
-    use std::os::windows::ffi::OsStrExt;
-    use windows_sys::Win32::Foundation::{ERROR_SUCCESS, GENERIC_READ, GENERIC_EXECUTE, LocalFree};
-    use windows_sys::Win32::Security::{
-        ACL, PSID, DACL_SECURITY_INFORMATION,
-    };
-    use windows_sys::Win32::Security::Authorization::{
-        ConvertStringSidToSidW, GetNamedSecurityInfoW, SetNamedSecurityInfoW,
-        SetEntriesInAclW, EXPLICIT_ACCESS_W, TRUSTEE_W, SET_ACCESS,
-        TRUSTEE_IS_SID, TRUSTEE_IS_WELL_KNOWN_GROUP,
+    use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
+
+    use windows_sys::Win32::{
+        Foundation::{LocalFree, ERROR_SUCCESS, GENERIC_EXECUTE, GENERIC_READ},
+        Security::{
+            Authorization::{
+                ConvertStringSidToSidW, GetNamedSecurityInfoW, SetEntriesInAclW,
+                SetNamedSecurityInfoW, EXPLICIT_ACCESS_W, SET_ACCESS, TRUSTEE_IS_SID,
+                TRUSTEE_IS_WELL_KNOWN_GROUP, TRUSTEE_W,
+            },
+            ACL, DACL_SECURITY_INFORMATION, PSID,
+        },
     };
 
     // Windows SDK constants
@@ -263,7 +261,9 @@ pub fn inject_dll(
 
     match method {
         InjectionMethod::ManualMap => crate::manual_map::manual_map_inject(&process, dll_path),
-        InjectionMethod::ThreadHijack => crate::thread_hijack::thread_hijack_inject(&process, dll_path),
+        InjectionMethod::ThreadHijack => {
+            crate::thread_hijack::thread_hijack_inject(&process, dll_path)
+        }
         InjectionMethod::Reflective => crate::reflective::reflective_inject(&process, dll_path),
         InjectionMethod::Standard => {
             let syringe = Syringe::for_process(process);
@@ -287,8 +287,7 @@ pub fn inject_dll(
 /// FDP Client Loader - Copy JAR to .fdpclient folder
 pub fn setup_fdp_jar(jar_path: &Path) -> Result<PathBuf, String> {
     // Get user home directory
-    let home = dirs::home_dir()
-        .ok_or_else(|| "Failed to get home directory".to_string())?;
+    let home = dirs::home_dir().ok_or_else(|| "Failed to get home directory".to_string())?;
 
     let fdp_dir = home.join(".fdpclient");
 
@@ -309,8 +308,7 @@ pub fn setup_fdp_jar(jar_path: &Path) -> Result<PathBuf, String> {
     }
 
     // Copy JAR to .fdpclient
-    fs::copy(jar_path, &dest_path)
-        .map_err(|e| format!("Failed to copy JAR: {}", e))?;
+    fs::copy(jar_path, &dest_path).map_err(|e| format!("Failed to copy JAR: {}", e))?;
 
     Ok(dest_path)
 }

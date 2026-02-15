@@ -1,18 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod injector;
 mod ffi_bridge;
 mod injection_method;
+mod injector;
 mod manual_map;
 mod reflective;
 mod thread_hijack;
 
-use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
+
+use serde::{Deserialize, Serialize};
 use sysinfo::System;
 use tauri::{generate_context, AppHandle, Emitter, Manager, State};
-use tokio::sync::oneshot;
-use tokio::time::sleep;
+use tokio::{sync::oneshot, time::sleep};
 
 #[derive(Debug, Serialize)]
 struct ProcessInfo {
@@ -84,7 +84,6 @@ struct WatcherState {
     handle: Mutex<Option<WatcherHandle>>,
 }
 
-
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let config_root = app
         .path()
@@ -137,8 +136,8 @@ fn get_settings(app: AppHandle) -> Result<InjectorSettings, String> {
 #[tauri::command]
 fn save_settings(app: AppHandle, settings: InjectorSettings) -> Result<String, String> {
     let path = settings_path(&app)?;
-    let data =
-        serde_json::to_string_pretty(&settings).map_err(|err| format!("Failed to serialize: {err}"))?;
+    let data = serde_json::to_string_pretty(&settings)
+        .map_err(|err| format!("Failed to serialize: {err}"))?;
     fs::write(&path, data).map_err(|err| format!("Failed to save config: {err}"))?;
     Ok("Settings saved.".to_string())
 }
@@ -153,20 +152,27 @@ fn inject_dll(request: InjectRequest) -> Result<String, String> {
     // Validate DLL path
     let dll_path = PathBuf::from(&request.dll_path);
     if !dll_path.exists() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err(
+            "System operation failed. Please check for updates or contact support for assistance."
+                .to_string(),
+        );
     }
 
     if !dll_path.is_file() {
-        return Err("System operation failed. Please check for updates or contact support for assistance.".to_string());
+        return Err(
+            "System operation failed. Please check for updates or contact support for assistance."
+                .to_string(),
+        );
     }
 
     // Validate DLL extension
-    let extension = dll_path.extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+    let extension = dll_path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
     if extension != "dll" && extension != "lib" {
-        return Err(format!("File must have .dll or .lib extension, found: .{}", extension));
+        return Err(format!(
+            "File must have .dll or .lib extension, found: .{}",
+            extension
+        ));
     }
 
     // Find the target process
@@ -219,16 +225,20 @@ fn start_watcher(
     }
 
     if !dll_path.is_file() {
-        return Err(format!("Specified path is not a file: {}", request.dll_path));
+        return Err(format!(
+            "Specified path is not a file: {}",
+            request.dll_path
+        ));
     }
 
     // Validate DLL extension
-    let extension = dll_path.extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+    let extension = dll_path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
     if extension != "dll" && extension != "lib" {
-        return Err(format!("File must have .dll or .lib extension, found: .{}", extension));
+        return Err(format!(
+            "File must have .dll or .lib extension, found: .{}",
+            extension
+        ));
     }
 
     let (stop_tx, mut stop_rx) = oneshot::channel();
@@ -258,7 +268,10 @@ fn start_watcher(
                         .and_then(|proc| injector::inject_dll(proc, &dll_path, method))
                     {
                         Ok(_) => {
-                            let _ = app_handle.emit("watcher-status", format!("DLL successfully injected into '{}'!", target));
+                            let _ = app_handle.emit(
+                                "watcher-status",
+                                format!("DLL successfully injected into '{}'!", target),
+                            );
                             last_pid = Some(current_pid);
                             // Don't break - continue watching for new instances
                         }
@@ -306,10 +319,7 @@ fn setup_fdp_jar(request: FdpJarRequest) -> Result<String, String> {
 
     let dest_path = injector::setup_fdp_jar(&jar_path)?;
 
-    Ok(format!(
-        "JAR copied to: {}",
-        dest_path.display()
-    ))
+    Ok(format!("JAR copied to: {}", dest_path.display()))
 }
 
 #[derive(Debug, Deserialize)]
@@ -349,7 +359,10 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
 
     // Spawn process
     match cmd.spawn() {
-        Ok(_) => Ok(format!("Java launched successfully!\nArguments: {}", request.jvm_args)),
+        Ok(_) => Ok(format!(
+            "Java launched successfully!\nArguments: {}",
+            request.jvm_args
+        )),
         Err(e) => Err(format!("Failed to launch Java: {}", e)),
     }
 }

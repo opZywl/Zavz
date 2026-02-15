@@ -31,9 +31,19 @@ export const NicknameModal: React.FC<NicknameModalProps> = ({ onConfirm }) => {
             <ZavzLogo />
           </div>
           <div className="flex flex-col items-center">
-            <span className="font-extrabold text-4xl tracking-tighter text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>ZAVZ</span>
+            <span
+              className="font-extrabold text-4xl tracking-tighter text-white"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              ZAVZ
+            </span>
             <div className="bg-[var(--accent-600)] px-3 py-0.5 rounded-md shadow-lg shadow-[var(--accent-shadow)] -mt-1">
-              <span className="font-black text-xs text-white block tracking-[0.2em] uppercase" style={{ fontFamily: "'Poppins', sans-serif" }}>INJECTOR</span>
+              <span
+                className="font-black text-xs text-white block tracking-[0.2em] uppercase"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                INJECTOR
+              </span>
             </div>
           </div>
         </div>

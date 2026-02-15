@@ -1,0 +1,24 @@
+# Clippy Configuration
+# See: https://doc.rust-lang.org/clippy/
+
+# Allow or deny certain lint groups
+# pedantic = "warn"
+# nursery = "warn"
+# cargo = "warn"
+
+# Specific lints to allow
+allow = [
+    # Allow unsafe code (required for Windows API and DLL injection)
+    "clippy::not_unsafe_ptr_arg_deref",
+]
+
+# Maximum cognitive complexity
+cognitive-complexity-threshold = 30
+
+# Deny certain bad patterns
+warn = [
+    "clippy::unwrap_used",
+    "clippy::expect_used",
+    "clippy::panic",
+    "clippy::todo",
+]
