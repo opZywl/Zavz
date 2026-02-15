@@ -50,9 +50,24 @@ else
   echo "==> Build incremental (use CLEAN=1 para limpeza completa)"
 fi
 
-# Instalar dependencias do Node.js se necessario
+# Instalar dependencias do Node.js quando necessario.
+# Isso evita erro de modulo TS ausente quando package.json muda e node_modules antigo fica no cache.
+NEEDS_NODE_INSTALL=0
 if [[ ! -d "node_modules" ]]; then
-  echo "==> Instalando dependencias do Node.js"
+  NEEDS_NODE_INSTALL=1
+else
+  while IFS= read -r dep; do
+    [[ -z "${dep}" ]] && continue
+    if [[ ! -d "node_modules/${dep}" ]]; then
+      echo "Dependencia ausente detectada: ${dep}"
+      NEEDS_NODE_INSTALL=1
+      break
+    fi
+  done < <(node -e "const p=require('./package.json'); const deps={...(p.dependencies||{}), ...(p.devDependencies||{})}; console.log(Object.keys(deps).join('\n'))")
+fi
+
+if [[ "${NEEDS_NODE_INSTALL}" == "1" ]]; then
+  echo "==> Instalando/atualizando dependencias do Node.js"
   npm install
 fi
 
