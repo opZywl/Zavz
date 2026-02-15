@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
 interface CardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {

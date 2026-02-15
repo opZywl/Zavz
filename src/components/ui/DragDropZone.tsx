@@ -1,4 +1,4 @@
-import React, { useState, useCallback, DragEvent } from 'react';
+import { useState, useCallback, DragEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload } from 'lucide-react';
 

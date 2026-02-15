@@ -1,5 +1,4 @@
-import React, { ButtonHTMLAttributes, ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -20,7 +19,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    'rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2';
+    'rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]';
 
   const variantClasses = {
     primary: 'bg-[var(--color-primary)] hover:opacity-90 text-white',
@@ -35,12 +34,10 @@ export function Button({
     lg: 'px-6 py-3 text-lg',
   };
 
-  const disabledClasses = 'opacity-50 cursor-not-allowed';
+  const disabledClasses = 'opacity-50 cursor-not-allowed hover:scale-100 active:scale-100';
 
   return (
-    <motion.button
-      whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
+    <button
       className={`
         ${baseClasses}
         ${variantClasses[variant]}
@@ -75,6 +72,6 @@ export function Button({
       )}
       {!loading && icon && <span>{icon}</span>}
       <span>{children}</span>
-    </motion.button>
+    </button>
   );
 }
