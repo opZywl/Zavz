@@ -204,16 +204,16 @@ const defaultNewsItems: NewsItem[] = [
   {
     id: '2',
     category: 'Interface',
-    title: 'Interface Customization is Live',
+    title: 'Interface Custom',
     date: '24/10/2025',
     description:
-      'Customize your injector experience with our new dynamic theming engine. Click to edit.',
+      'Customize your loader experience with our new dynamic theming engine. Click to edit.',
     imageUrl: '/img/card/color.jpg',
     linkText: 'Customize',
   },
   {
     id: '3',
-    category: 'Proxy',
+    category: 'News',
     title: '',
     description: '',
     imageUrl: '',
@@ -413,39 +413,75 @@ const App = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (fdpMode) {
-      resolveResource('native.dll')
-        .then((resourcePath) => {
-          setDllPath(resourcePath);
-        })
-        .catch(() => {
-          setDllPath('src/load/native.dll');
-        });
-    }
-  }, [fdpMode]);
-
   // ---- Handlers ----
-  const handleInject = async () => {
-    if (!dllPath) {
-      addLog('No DLL selected.', 'error');
-      return;
-    }
-    addLog(`Injecting on ${targetProcess}...`, 'system');
+  const handleInject = async (mode: 'manual' | 'fdp') => {
     const methodMap: Record<string, string> = {
       Standard: 'standard',
       Manual: 'manual_map',
       'Thread Hijack': 'thread_hijack',
       Reflective: 'reflective',
     };
-    try {
-      const result = await invoke<string>('inject_dll', {
+
+    const tryInject = async (path: string) => {
+      return invoke<string>('inject_dll', {
         request: {
           target: targetProcess,
-          dllPath,
+          dllPath: path,
           method: methodMap[injectionMethod] || 'standard',
         },
       });
+    };
+
+    const normalizeError = (message: string, usedPath: string) => {
+      if (message.includes('System operation failed')) {
+        return `DLL path is invalid or missing: ${usedPath}`;
+      }
+      return message;
+    };
+
+    const injectWithResolvedFdpPath = async () => {
+      const candidates: string[] = [];
+      try {
+        candidates.push(await resolveResource('native.dll'));
+      } catch {}
+      candidates.push('src/load/native.dll');
+      candidates.push('native.dll');
+
+      const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
+      let lastError = 'FDP payload DLL not found.';
+
+      for (const candidate of uniqueCandidates) {
+        try {
+          setDllPath(candidate);
+          return await tryInject(candidate);
+        } catch (error) {
+          const message = normalizeError(
+            error instanceof Error ? error.message : String(error),
+            candidate
+          );
+          lastError = message;
+          if (message.includes('DLL path is invalid or missing')) {
+            continue;
+          }
+          throw new Error(message);
+        }
+      }
+
+      throw new Error(lastError);
+    };
+
+    try {
+      addLog(`Injecting on ${targetProcess}...`, 'system');
+
+      if (mode === 'manual' && !dllPath.trim()) {
+        throw new Error('No DLL selected.');
+      }
+
+      const result =
+        mode === 'fdp'
+          ? await injectWithResolvedFdpPath()
+          : await tryInject(dllPath?.trim() || '');
+
       addLog(result, 'success');
       if (autoClose) {
         setTimeout(async () => {
@@ -455,10 +491,13 @@ const App = () => {
         }, 3000);
       }
     } catch (error) {
-      addLog(
-        `Injection failed: ${error instanceof Error ? error.message : String(error)}`,
-        'error'
+      const usedPath = mode === 'fdp' ? dllPath || 'native.dll' : dllPath || '<empty>';
+      const message = normalizeError(
+        error instanceof Error ? error.message : String(error),
+        usedPath
       );
+      addLog(`Injection failed: ${message}`, 'error');
+      throw new Error(message);
     }
   };
 
@@ -603,10 +642,10 @@ const App = () => {
           <div className="mt-4 mb-6 pl-1">
             <p className="text-gray-400 text-[13px] font-medium mb-2 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-500)] animate-pulse shrink-0"></span>
-              fix(core): Memory leak in pipe (#992)
+              Release B1: The First Beta Version Is Now Available
             </p>
             <p className="text-gray-600 text-[13px] leading-relaxed">
-              Experimental build. Use at your own risk on main accounts. Integrity check passed.
+              If something goes wrong, just tell everyone it's an Easter egg. It's a feature, not a bug!
             </p>
           </div>
 

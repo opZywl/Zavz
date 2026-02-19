@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { X, FileCode, Zap, CheckCircle } from './Icons';
+
+type InjectionMode = 'manual' | 'fdp';
 
 interface InjectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onInject: () => Promise<void>;
+  onInject: (mode: InjectionMode) => Promise<void>;
   dllPath: string;
   setDllPath: (path: string) => void;
   fdpMode: boolean;
@@ -12,6 +15,11 @@ interface InjectionModalProps {
 }
 
 type Step = 'select' | 'manual' | 'injecting' | 'success';
+
+interface SelectedDll {
+  name: string;
+  path: string;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const InjectionModal: React.FC<InjectionModalProps> = ({
@@ -26,74 +34,120 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
   if (!isOpen) return null;
 
   const [step, setStep] = useState<Step>('select');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [activeMode, setActiveMode] = useState<InjectionMode | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedDll | null>(null);
+  const [manualError, setManualError] = useState('');
+  const [isPickingFile, setIsPickingFile] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logText, setLogText] = useState('Initializing...');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setStep('select');
+      setActiveMode(null);
       setSelectedFile(null);
+      setManualError('');
       setProgress(0);
       setLogText('Initializing...');
     }
   }, [isOpen]);
 
-  // Real injection with progress animation
   useEffect(() => {
-    if (step === 'injecting') {
-      let cancelled = false;
+    if (step !== 'injecting') return;
 
-      const runInjection = async () => {
-        const progressInterval = setInterval(() => {
-          setProgress((prev) => {
-            if (prev >= 90) return 90;
-            const increment = Math.random() * 2 + 0.5;
-            const newProgress = prev + increment;
-            if (newProgress > 10 && newProgress < 30) setLogText('Scanning process memory...');
-            if (newProgress > 30 && newProgress < 50) setLogText('Allocating memory space...');
-            if (newProgress > 50 && newProgress < 70) setLogText('Writing payload...');
-            if (newProgress > 70) setLogText('Hijacking threads...');
-            return Math.min(newProgress, 90);
-          });
-        }, 50);
+    let cancelled = false;
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return 90;
+        const increment = Math.random() * 2 + 0.5;
+        const newProgress = prev + increment;
+        if (newProgress > 10 && newProgress < 30) setLogText('Scanning process memory...');
+        if (newProgress > 30 && newProgress < 50) setLogText('Allocating memory space...');
+        if (newProgress > 50 && newProgress < 70) setLogText('Writing payload...');
+        if (newProgress > 70) setLogText('Hijacking threads...');
+        return Math.min(newProgress, 90);
+      });
+    }, 50);
 
-        try {
-          await onInject();
-          clearInterval(progressInterval);
-          if (!cancelled) {
-            setProgress(100);
-            setLogText('Finalizing injection...');
-            setTimeout(() => {
-              if (!cancelled) setStep('success');
-            }, 800);
-          }
-        } catch {
-          clearInterval(progressInterval);
-          if (!cancelled) {
-            setLogText('Injection failed!');
-            setTimeout(() => {
-              if (!cancelled) setStep('select');
-            }, 2000);
-          }
+    const runInjection = async () => {
+      try {
+        if (!activeMode) throw new Error('No injection mode selected.');
+        await onInject(activeMode);
+
+        if (!cancelled) {
+          setProgress(100);
+          setLogText('Finalizing injection...');
+          setTimeout(() => {
+            if (!cancelled) setStep('success');
+          }, 800);
         }
-      };
+      } catch {
+        if (!cancelled) {
+          setLogText('Injection failed!');
+          setTimeout(() => {
+            if (!cancelled) {
+              setStep(activeMode === 'manual' ? 'manual' : 'select');
+            }
+          }, 1600);
+        }
+      } finally {
+        clearInterval(progressInterval);
+      }
+    };
 
-      runInjection();
-      return () => {
-        cancelled = true;
-      };
+    runInjection();
+
+    return () => {
+      cancelled = true;
+      clearInterval(progressInterval);
+    };
+  }, [activeMode, step]);
+
+  const extractNativePath = (file: File): string | null => {
+    const maybePath = (file as File & { path?: string }).path;
+    if (!maybePath || maybePath.startsWith('C:\\fakepath\\')) {
+      return null;
     }
-  }, [step]);
+    return maybePath;
+  };
+
+  const setManualDll = (path: string, name: string) => {
+    setSelectedFile({ path, name });
+    setDllPath(path);
+    setManualError('');
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      const filePath = (file as any).path || file.name;
-      setDllPath(filePath);
+    if (!e.target.files?.[0]) return;
+
+    const file = e.target.files[0];
+    const nativePath = extractNativePath(file);
+
+    if (!nativePath) {
+      setSelectedFile(null);
+      setDllPath('');
+      setManualError('Absolute path unavailable. Use "Browse DLL" below.');
+      return;
+    }
+
+    setManualDll(nativePath, file.name);
+  };
+
+  const handleBrowseDll = async () => {
+    setIsPickingFile(true);
+    setManualError('');
+    try {
+      const selectedPath = await invoke<string | null>('pick_dll_file');
+      if (!selectedPath) return;
+
+      const normalizedPath = selectedPath.replace(/\//g, '\\');
+      const fileName = normalizedPath.split('\\').pop() || normalizedPath;
+      setManualDll(normalizedPath, fileName);
+    } catch {
+      setManualError('Failed to open native picker. Try drag and drop.');
+    } finally {
+      setIsPickingFile(false);
     }
   };
 
@@ -103,9 +157,17 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setSelectedFile(e.dataTransfer.files[0]);
+    if (!e.dataTransfer.files?.[0]) return;
+
+    const droppedFile = e.dataTransfer.files[0];
+    const nativePath = extractNativePath(droppedFile);
+
+    if (!nativePath) {
+      setManualError('Dropped file path is unavailable. Use "Browse DLL".');
+      return;
     }
+
+    setManualDll(nativePath, droppedFile.name);
   };
 
   return (
@@ -114,7 +176,6 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
         className="bg-[#18181b]/70 backdrop-blur-2xl w-[580px] min-h-[380px] rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col font-sans text-white border border-white/[0.08] relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         {step !== 'injecting' && step !== 'success' && (
           <div className="flex items-center justify-between px-7 py-5 shrink-0">
             <h2
@@ -137,14 +198,16 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
           <div className="h-[1px] bg-white/[0.06] mx-7"></div>
         )}
 
-        {/* Content Area */}
         <div className="flex-1 p-7 flex flex-col justify-center">
-          {/* STEP 1: MODE SELECTION */}
           {step === 'select' && (
             <div className="grid grid-cols-2 gap-4 h-full">
-              {/* Manual Mode */}
               <button
-                onClick={() => setStep('manual')}
+                onClick={() => {
+                  setFdpMode(false);
+                  setActiveMode('manual');
+                  setManualError('');
+                  setStep('manual');
+                }}
                 className="group relative bg-black/20 hover:bg-black/30 rounded-xl p-6 flex flex-col items-center justify-center gap-4 border border-white/[0.06] hover:border-[var(--accent-500)]/30 transition-all duration-300"
               >
                 <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -156,10 +219,10 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
                 </div>
               </button>
 
-              {/* FDP Mode */}
               <button
                 onClick={() => {
                   setFdpMode(true);
+                  setActiveMode('fdp');
                   setStep('injecting');
                 }}
                 className="group relative bg-black/20 hover:bg-black/30 rounded-xl p-6 flex flex-col items-center justify-center gap-4 border border-white/[0.06] hover:border-[var(--accent-500)]/30 transition-all duration-300"
@@ -175,32 +238,47 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
             </div>
           )}
 
-          {/* STEP 2: MANUAL UPLOAD */}
           {step === 'manual' && (
             <div className="h-full flex flex-col gap-5">
               {!selectedFile ? (
-                <div
-                  className="flex-1 border-2 border-dashed border-white/[0.08] hover:border-[var(--accent-500)]/40 bg-black/10 rounded-xl flex flex-col items-center justify-center gap-4 transition-colors cursor-pointer group"
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input
-                    type="file"
-                    className="hidden"
-                    ref={fileInputRef}
-                    accept=".dll,.lib"
-                    onChange={handleFileSelect}
-                  />
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
-                    <FileCode size={24} className="text-[var(--accent-500)]" />
+                <div className="flex-1 flex flex-col gap-4">
+                  <div
+                    className="flex-1 border-2 border-dashed border-white/[0.08] hover:border-[var(--accent-500)]/40 bg-black/10 rounded-xl flex flex-col items-center justify-center gap-4 transition-colors cursor-pointer group"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={fileInputRef}
+                      accept=".dll,.lib"
+                      onChange={handleFileSelect}
+                    />
+                    <div className="w-14 h-14 rounded-2xl bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
+                      <FileCode size={24} className="text-[var(--accent-500)]" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-white font-semibold text-base group-hover:text-[var(--accent-400)] transition-colors">
+                        Click to select DLL or Drag & Drop
+                      </h3>
+                      <p className="text-gray-600 text-xs mt-1">Supported formats: .dll, .lib</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <h3 className="text-white font-semibold text-base group-hover:text-[var(--accent-400)] transition-colors">
-                      Click to select DLL or Drag & Drop
-                    </h3>
-                    <p className="text-gray-600 text-xs mt-1">Supported formats: .dll, .lib</p>
-                  </div>
+
+                  <button
+                    onClick={handleBrowseDll}
+                    disabled={isPickingFile}
+                    className="px-5 py-2.5 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all"
+                  >
+                    {isPickingFile ? 'Opening picker...' : 'Browse DLL (Native)'}
+                  </button>
+
+                  {manualError && (
+                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                      {manualError}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center gap-5">
@@ -217,7 +295,10 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
                       {selectedFile.name}
                     </span>
                     <button
-                      onClick={() => setSelectedFile(null)}
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setDllPath('');
+                      }}
                       className="ml-2 text-gray-500 hover:text-red-400 transition-colors"
                     >
                       <X size={14} />
@@ -225,7 +306,11 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
                   </div>
 
                   <button
-                    onClick={() => setStep('injecting')}
+                    onClick={() => {
+                      setFdpMode(false);
+                      setActiveMode('manual');
+                      setStep('injecting');
+                    }}
                     className="mt-2 px-8 py-3 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
                   >
                     <Zap size={16} fill="currentColor" />
@@ -236,7 +321,6 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
             </div>
           )}
 
-          {/* STEP 3: INJECTING */}
           {step === 'injecting' && (
             <div className="h-full flex flex-col items-center justify-center text-center relative">
               <div className="relative mb-8">
@@ -277,7 +361,6 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
             </div>
           )}
 
-          {/* STEP 4: SUCCESS */}
           {step === 'success' && (
             <div className="h-full flex flex-col items-center justify-center text-center">
               <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6 border border-green-500/20">

@@ -40,6 +40,7 @@ export interface TauriCommands {
   start_watcher: (request: WatcherRequest) => Promise<string>;
   stop_watcher: () => Promise<string>;
   setup_fdp_jar: (request: FdpJarRequest) => Promise<string>;
+  pick_dll_file: () => Promise<string | null>;
   get_settings: () => Promise<InjectorSettings>;
   save_settings: (settings: InjectorSettings) => Promise<string>;
 }

@@ -367,6 +367,15 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+fn pick_dll_file() -> Result<Option<String>, String> {
+    let selected = rfd::FileDialog::new()
+        .add_filter("Dynamic Libraries", &["dll", "lib"])
+        .pick_file();
+
+    Ok(selected.map(|path| path.to_string_lossy().to_string()))
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -384,6 +393,7 @@ fn main() {
             stop_watcher,
             setup_fdp_jar,
             launch_jvm,
+            pick_dll_file,
         ])
         .run(generate_context!())
         .expect("Error running Tauri application");

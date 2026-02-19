@@ -60,8 +60,8 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({
               <Palette size={18} />
             </div>
             <div>
-              <h2 className="text-lg font-bold tracking-tight">Interface Customization</h2>
-              <p className="text-xs text-gray-500">Personalize your injection experience</p>
+              <h2 className="text-lg font-bold tracking-tight">Interface Custom</h2>
+              <p className="text-xs text-gray-500">Personalize your loader experience</p>
             </div>
           </div>
           <button
