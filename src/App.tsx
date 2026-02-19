@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { resolveResource } from '@tauri-apps/api/path';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Header } from './components/Header';
 import { NewsCard } from './components/NewsCard';
@@ -422,12 +421,12 @@ const App = () => {
       Reflective: 'reflective',
     };
 
-    const tryInject = async (path: string) => {
+    const tryInject = async (path: string, methodOverride?: string) => {
       return invoke<string>('inject_dll', {
         request: {
           target: targetProcess,
           dllPath: path,
-          method: methodMap[injectionMethod] || 'standard',
+          method: methodOverride || methodMap[injectionMethod] || 'standard',
         },
       });
     };
@@ -440,34 +439,10 @@ const App = () => {
     };
 
     const injectWithResolvedFdpPath = async () => {
-      const candidates: string[] = [];
-      try {
-        candidates.push(await resolveResource('native.dll'));
-      } catch {}
-      candidates.push('src/load/native.dll');
-      candidates.push('native.dll');
-
-      const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
-      let lastError = 'FDP payload DLL not found.';
-
-      for (const candidate of uniqueCandidates) {
-        try {
-          setDllPath(candidate);
-          return await tryInject(candidate);
-        } catch (error) {
-          const message = normalizeError(
-            error instanceof Error ? error.message : String(error),
-            candidate
-          );
-          lastError = message;
-          if (message.includes('DLL path is invalid or missing')) {
-            continue;
-          }
-          throw new Error(message);
-        }
-      }
-
-      throw new Error(lastError);
+      const resolvedPath = await invoke<string>('resolve_fdp_dll_path');
+      setDllPath(resolvedPath);
+      // FDP mode should always use the most stable method.
+      return tryInject(resolvedPath, 'standard');
     };
 
     try {

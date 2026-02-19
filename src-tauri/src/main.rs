@@ -7,7 +7,7 @@ mod manual_map;
 mod reflective;
 mod thread_hijack;
 
-use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
+use std::{collections::HashSet, fs, path::PathBuf, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
@@ -367,6 +367,62 @@ fn launch_jvm(request: LaunchJvmRequest) -> Result<String, String> {
     }
 }
 
+fn resolve_existing_fdp_dll(app: &AppHandle) -> Result<PathBuf, String> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("src").join("load").join("native.dll"));
+        candidates.push(resource_dir.join("native.dll"));
+    }
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            candidates.push(
+                exe_dir
+                    .join("_up_")
+                    .join("src")
+                    .join("load")
+                    .join("native.dll"),
+            );
+            candidates.push(
+                exe_dir
+                    .join("resources")
+                    .join("src")
+                    .join("load")
+                    .join("native.dll"),
+            );
+            candidates.push(exe_dir.join("resources").join("native.dll"));
+        }
+    }
+
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("src").join("load").join("native.dll"));
+        candidates.push(cwd.join("native.dll"));
+    }
+
+    let mut seen = HashSet::new();
+    for candidate in candidates {
+        let key = candidate.to_string_lossy().to_lowercase();
+        if !seen.insert(key) {
+            continue;
+        }
+        if candidate.exists() && candidate.is_file() {
+            if let Ok(canonical) = candidate.canonicalize() {
+                return Ok(canonical);
+            }
+            return Ok(candidate);
+        }
+    }
+
+    Err("FDP native.dll not found in expected resource paths.".to_string())
+}
+
+#[tauri::command]
+fn resolve_fdp_dll_path(app: AppHandle) -> Result<String, String> {
+    let path = resolve_existing_fdp_dll(&app)?;
+    Ok(path.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 fn pick_dll_file() -> Result<Option<String>, String> {
     let selected = rfd::FileDialog::new()
@@ -393,6 +449,7 @@ fn main() {
             stop_watcher,
             setup_fdp_jar,
             launch_jvm,
+            resolve_fdp_dll_path,
             pick_dll_file,
         ])
         .run(generate_context!())
