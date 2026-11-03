@@ -1,12 +1,23 @@
+import { isAllowedExternalUrl } from './urlRegistry';
+import { invoke } from '@tauri-apps/api/core';
+import { isTauriRuntime } from './runtime';
+
 /**
- * Opens a URL in the system's default browser.
- * Uses Tauri plugin-opener when available, falls back to window.open.
+ * Opens a URL in the system browser. Blocks non-allowlisted hosts.
  */
-export async function openExternal(url: string): Promise<void> {
+export async function openExternal(url: string): Promise<boolean> {
+  if (!url || !isAllowedExternalUrl(url)) {
+    return false;
+  }
   try {
-    const { openUrl } = await import('@tauri-apps/plugin-opener');
-    await openUrl(url);
+    if (isTauriRuntime()) {
+      await invoke('open_external', { url });
+      return true;
+    }
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (opened) opened.opener = null;
+    return opened !== null;
   } catch {
-    window.open(url, '_blank');
+    return false;
   }
 }

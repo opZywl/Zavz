@@ -1,0 +1,132 @@
+/*
+ * ZAVZ design tokens.
+ * Adapted from portfolio/lib/design-system and the live /design documentation.
+ */
+:root {
+  color-scheme: dark;
+
+  --ds-ink-950: #0b0b0f;
+  --ds-ink-900: #110f10;
+  --ds-ink-875: #121212;
+  --ds-ink-850: #131316;
+  --ds-ink-800: #18181b;
+  --ds-ink-700: #1f1f22;
+  --ds-ink-600: #27272a;
+  --ds-ink-500: #3a3a3a;
+  --ds-paper-0: #ffffff;
+  --ds-paper-50: #fdfdfd;
+  --ds-paper-100: #f8f8fa;
+  --ds-paper-200: #d4d4d8;
+  --ds-paper-300: #9ca3af;
+
+  --ds-background: #121212;
+  --ds-card: #110f10;
+  --ds-surface: #18181b;
+  --ds-surface-hover: #1f1f22;
+  --ds-surface-active: #27272a;
+  --ds-text: #f8f8fa;
+  --ds-text-secondary: #a1a1aa;
+  --ds-text-muted: #71717a;
+  --ds-text-disabled: #52525b;
+  --ds-border-hairline: rgba(255, 255, 255, 0.06);
+  --ds-border-subtle: rgba(255, 255, 255, 0.08);
+  --ds-border-default: rgba(255, 255, 255, 0.14);
+  --ds-border-strong: rgba(255, 255, 255, 0.28);
+
+  --ds-accent: #f8f8fa;
+  --ds-accent-bright: #ffffff;
+  --ds-accent-soft: #d4d4d8;
+  --ds-success: #f8f8fa;
+  --ds-warning: #d4d4d8;
+  --ds-error: #a1a1aa;
+  --zavz-purple: #9333ea;
+  --zavz-purple-bright: #a855f7;
+
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.25rem;
+  --ds-space-6: 1.5rem;
+  --ds-space-8: 2rem;
+
+  --ds-radius-sm: 0.5rem;
+  --ds-radius-md: 0.75rem;
+  --ds-radius-lg: 1rem;
+  --ds-radius-xl: 1.5rem;
+  --ds-radius-2xl: 2rem;
+  --ds-radius-pill: 9999px;
+
+  --ds-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --ds-shadow-sm: 0 3px 13px rgba(0, 0, 0, 0.24);
+  --ds-shadow-md: 0 28px 72px -52px rgba(0, 0, 0, 0.8);
+  --ds-shadow-xl:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 30px 80px rgba(0, 0, 0, 0.58),
+    0 0 120px rgba(255, 255, 255, 0.025);
+  --ds-shadow-modal: 0 20px 60px -10px rgba(0, 0, 0, 0.78);
+  --ds-inset-glow: 0 0 60px -25px rgba(255, 255, 255, 0.12) inset;
+
+  --ds-duration-instant: 150ms;
+  --ds-duration-fast: 200ms;
+  --ds-duration-base: 300ms;
+  --ds-duration-slow: 600ms;
+  --ds-ease-standard: cubic-bezier(0, 0, 0.2, 1);
+  --ds-ease-fluent: cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-emphasized: cubic-bezier(0.2, 1, 0.3, 1);
+
+  --ds-z-base: 0;
+  --ds-z-raised: 10;
+  --ds-z-nav: 50;
+  --ds-z-overlay: 60;
+  --ds-z-modal: 70;
+
+  --ds-card-padding: 0.875rem;
+  --ds-grid-gap: 0.75rem;
+  --effect-intensity: 0.2;
+
+  /* Compatibility for legacy modals while they consume the shared system. */
+  --accent-100: #ffffff;
+  --accent-400: #f8f8fa;
+  --accent-500: #f8f8fa;
+  --accent-600: #e4e4e7;
+  --accent-700: #a1a1aa;
+  --accent-900: #27272a;
+  --accent-rgb: 248, 248, 250;
+  --accent-shadow: rgba(var(--accent-rgb), 0.35);
+  --accent-shadow-light: rgba(var(--accent-rgb), 0.2);
+  --accent-500-30: rgba(var(--accent-rgb), 0.3);
+  --accent-500-20: rgba(var(--accent-rgb), 0.2);
+}
+
+[data-appearance='oled'] {
+  --ds-background: #121212;
+  --ds-card: #110f10;
+  --ds-surface: #18181b;
+  --ds-surface-hover: #1f1f22;
+  --ds-surface-active: #27272a;
+}
+
+[data-density='compact'] {
+  --ds-card-padding: 0.85rem;
+  --ds-grid-gap: 0.55rem;
+}
+
+[data-motion='off'] *,
+[data-motion='off'] *::before,
+[data-motion='off'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "n1",
+    "category": "Release",
+    "title": "FDP b17 released",
+    "date": "17/07/2026",
+    "description": "FDP b17 is now available with updated injection compatibility and client fixes.",
+    "imageUrl": "/img/icon/social/fdp-logo.png",
+    "linkText": "Changelog",
+    "url": "https://fdpinfo.github.io/next/"
+  },
+  {
+    "id": "n2",
+    "category": "Mappings",
+    "title": "Mappings & client manuals",
+    "date": "18/07/2026",
+    "description": "Check the latest mappings or open the manual for your client before starting injection.",
+    "imageUrl": "/img/news/mappings.png",
+    "linkText": "Open mappings",
+    "url": "https://github.com/opZywl"
+  },
+  {
+    "id": "n3",
+    "category": "Clients",
+    "title": "More clients supported",
+    "date": "17/07/2026",
+    "description": "CheatBreaker, BadlionClient, CMClient, Lunar, Forge and Vanilla profiles are now available.",
+    "imageUrl": "/img/news/clients.png",
+    "linkText": "View clients",
+    "url": "https://github.com/opZywl"
+  }
+]

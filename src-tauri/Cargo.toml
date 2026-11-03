@@ -1,25 +1,31 @@
 [package]
-name = "Zavz"
-version = "0.1.0"
+name = "zavz"
+version = "1.1.2"
 edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+zip = { version = "=9.2.1", default-features = false }
 sysinfo = "0.30"
 dll-syringe = { version = "0.17", default-features = false, features = ["syringe"] }
 tokio = { version = "1.37", features = ["sync", "time"] }
-tauri = { version = "2.3", features = [] }
+# custom-protocol is required in release builds: without it the WebView tries the dev server at localhost:5173.
+tauri = { version = "2.3", features = ["custom-protocol"] }
 tauri-plugin-opener = "2"
 dirs = "5.0"
 rfd = "0.15"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winnt", "errhandlingapi", "wow64apiset", "minwindef", "handleapi", "fileapi", "securitybaseapi", "winbase", "processthreadsapi", "tlhelp32"] }
+winapi = { version = "0.3", features = ["winnt", "errhandlingapi", "wow64apiset", "minwindef", "handleapi", "fileapi", "securitybaseapi", "winbase", "processthreadsapi", "tlhelp32", "winuser"] }
 windows-sys = { version = "0.59", features = ["Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_Foundation", "Win32_System_Memory", "Win32_System_Threading", "Win32_System_Diagnostics_Debug", "Win32_System_Diagnostics_ToolHelp", "Win32_System_LibraryLoader", "Win32_System_Kernel"] }
 
 [build-dependencies]
 tauri-build = { version = "2.3", features = [] }
+
+[[bin]]
+name = "ZAVZ"
+path = "src/main.rs"
 
 [profile.release]
 opt-level = "z"

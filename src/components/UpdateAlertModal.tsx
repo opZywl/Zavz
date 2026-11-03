@@ -1,5 +1,8 @@
-import React from 'react';
+import { useEffect } from 'react';
+import { ArrowUpRight, Sparkles, X } from 'lucide-react';
 import { ZavzLogo } from './Icons';
+import { Button } from './ui/Button';
+import { StatusBadge } from './ui/StatusBadge';
 import { openExternal } from '../utils/openExternal';
 import { URLRegistry } from '../utils/urlRegistry';
 
@@ -9,59 +12,71 @@ interface UpdateAlertModalProps {
   version: string;
 }
 
-export const UpdateAlertModal: React.FC<UpdateAlertModalProps> = ({ isOpen, onClose, version }) => {
+export function UpdateAlertModal({ isOpen, onClose, version }: UpdateAlertModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  const handleUpdate = () => {
-    openExternal(URLRegistry.GITHUB);
-    onClose();
-  };
-
   return (
-    <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-      <div
-        className="bg-[#121214]/95 w-[420px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="ds-modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="ds-modal ds-update-alert-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="update-alert-title"
       >
-        {/* Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-[var(--accent-500)] opacity-10 blur-[60px] pointer-events-none"></div>
-
-        {/* Content */}
-        <div className="relative p-8 flex flex-col items-center gap-5">
-          <ZavzLogo />
-
-          <div className="text-center space-y-2">
-            <h2
-              className="text-white font-bold text-xl"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              New Update Available
-            </h2>
-            <p className="text-gray-400 text-sm">
-              Version <span className="text-[var(--accent-400)] font-bold">{version}</span> is now
-              available.
-            </p>
-            <p className="text-gray-500 text-xs">
-              Update to get the latest features and bug fixes.
-            </p>
+        <header className="ds-modal-header">
+          <div>
+            <p className="ds-overline">Release channel</p>
+            <h2 id="update-alert-title">Update available</h2>
           </div>
+          <button className="ds-icon-button" onClick={onClose} aria-label="Close update alert">
+            <X size={16} />
+          </button>
+        </header>
 
-          <div className="flex gap-3 w-full mt-2">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 text-sm font-bold text-gray-400 hover:text-white border border-white/10 hover:border-white/20 rounded-xl transition-all"
-            >
-              Later
-            </button>
-            <button
-              onClick={handleUpdate}
-              className="flex-1 py-2.5 text-sm font-bold text-white bg-[var(--accent-600)] hover:bg-[var(--accent-500)] rounded-xl shadow-[0_4px_20px_var(--accent-shadow)] transition-all active:scale-95"
-            >
-              Update Now
-            </button>
+        <div className="ds-update-alert-body">
+          <div className="ds-update-alert-logo">
+            <ZavzLogo />
           </div>
+          <StatusBadge tone="accent">
+            <Sparkles size={12} /> {version}
+          </StatusBadge>
+          <h3>A newer ZAVZ release is ready.</h3>
+          <p>Open the verified GitHub release page to review changes before installing.</p>
         </div>
-      </div>
+
+        <footer className="ds-modal-footer">
+          <span />
+          <div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Later
+            </Button>
+            <Button
+              size="sm"
+              icon={<ArrowUpRight size={14} />}
+              onClick={() => {
+                void openExternal(URLRegistry.GITHUB);
+                onClose();
+              }}
+            >
+              Open releases
+            </Button>
+          </div>
+        </footer>
+      </section>
     </div>
   );
-};
+}

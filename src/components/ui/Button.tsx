@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -18,23 +18,22 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const baseClasses =
-    'rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]';
+  const baseClasses = 'ds-button';
 
   const variantClasses = {
-    primary: 'bg-[var(--color-primary)] hover:opacity-90 text-white',
-    secondary: 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
-    ghost: 'bg-transparent hover:bg-white/10 text-white',
+    primary: 'ds-button-primary',
+    secondary: 'ds-button-secondary',
+    danger: 'ds-button-danger',
+    ghost: 'ds-button-ghost',
   };
 
   const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
+    sm: 'ds-button-sm',
+    md: 'ds-button-md',
+    lg: 'ds-button-lg',
   };
 
-  const disabledClasses = 'opacity-50 cursor-not-allowed hover:scale-100 active:scale-100';
+  const disabledClasses = 'ds-button-disabled';
 
   return (
     <button

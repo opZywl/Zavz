@@ -12,7 +12,6 @@
     "core:window:allow-start-dragging",
     "core:window:allow-is-maximized",
     "core:window:allow-set-decorations",
-    "core:window:default",
-    "opener:default"
+    "core:window:default"
   ]
 }

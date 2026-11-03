@@ -11,7 +11,7 @@ use std::os::windows::io::AsRawHandle;
 use std::path::Path;
 
 #[cfg(target_os = "windows")]
-use dll_syringe::process::{OwnedProcess, Process};
+use dll_syringe::process::OwnedProcess;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Memory::{
     VirtualAllocEx, VirtualFreeEx, MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READWRITE,
@@ -170,9 +170,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_manual_map_not_implemented() {
-        // This test ensures the function correctly reports not implemented
-        // In a real implementation, you would test the actual functionality
-        assert!(true);
+    fn image_dos_header_matches_the_pe_layout() {
+        assert_eq!(std::mem::size_of::<ImageDosHeader>(), 64);
     }
 }

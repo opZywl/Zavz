@@ -1,0 +1,22 @@
+[
+  {
+    "version": "1.1.0",
+    "date": "18/07/2026",
+    "status": "current",
+    "highlights": [
+      "Portfolio design system with compact dark surfaces",
+      "Classic launch, news and dock application layout",
+      "Select Client: Auto / CM / Badlion / Lunar / CB / Vanilla / Forge"
+    ],
+    "fixes": ["CB HUD ghost double-paint", "Proxy disabled on CB"],
+    "features": ["Local news feed", "Portfolio link", "Interface customization"]
+  },
+  {
+    "version": "1.0.1",
+    "date": "16/07/2026",
+    "status": "previous",
+    "highlights": ["FDP Mode multi-client", "Embedded native.dll", "release.jar materialize"],
+    "fixes": ["Inject target Auto fallback"],
+    "features": ["Client selection modal"]
+  }
+]

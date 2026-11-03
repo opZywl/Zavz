@@ -1,156 +1,153 @@
-import React from 'react';
-import { X, Check } from './Icons';
+import { useEffect, useState } from 'react';
+import { Check, X } from 'lucide-react';
+import type { FdpWrapper } from '../types/tauri';
+import { Button } from './ui/Button';
 
 interface ClientSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  selected: FdpWrapper;
+  onSelect: (wrapper: FdpWrapper) => void;
 }
 
-const clients = [
+const clients: Array<{
+  id: FdpWrapper;
+  name: string;
+  logo: string;
+  statusText: string;
+}> = [
   {
-    id: 'lunar',
-    name: 'Lunar Client',
-    logo: '/img/icon/social/lunar-client_logo.png',
-    status: 'active',
-    statusText: 'Detected & Ready',
+    id: 'auto',
+    name: 'Auto detect',
+    logo: '/img/icon/social/fdp-logo.png',
+    statusText: 'Find the active supported Minecraft client automatically.',
+  },
+  {
+    id: 'cmclient',
+    name: 'CMCLIENT',
+    logo: '/img/icon/social/cmclient-logo.png',
+    statusText: 'Minecraft 1.8.9 via cmpack or cmlauncher.',
   },
   {
     id: 'badlion',
     name: 'Badlion Client',
     logo: '/img/icon/social/badlion-logo.png',
-    status: 'locked',
-    statusText: 'Coming soon',
+    statusText: 'Minecraft 1.8.9 running with the Badlion JDK.',
   },
   {
-    id: 'forge',
-    name: 'Minecraft Forge',
-    logo: '/img/icon/social/forge_logo.png',
-    status: 'locked',
-    statusText: 'Coming soon',
+    id: 'lunar',
+    name: 'Lunar Client',
+    logo: '/img/icon/social/lunar-client_logo.png',
+    statusText: 'The running Minecraft session, not the Lunar home screen.',
   },
   {
     id: 'cheatbreaker',
     name: 'CheatBreaker',
-    logo: '/img/icon/social/cheatbreaker_logo.png',
-    status: 'locked',
-    statusText: 'Coming soon',
+    logo: '/img/icon/social/cheatbreaker.webp',
+    statusText: 'Active CheatBreaker 1.8.9 game process.',
   },
   {
     id: 'vanilla',
     name: 'Vanilla',
     logo: '/img/icon/social/icon-version-mc.png',
-    status: 'locked',
-    statusText: 'Coming soon',
+    statusText: 'Official Minecraft 1.8.9 game process.',
+  },
+  {
+    id: 'forge',
+    name: 'Minecraft Forge',
+    logo: '/img/icon/social/forge_logo.png',
+    statusText: 'Minecraft Forge 1.8.9 using the MCP path.',
   },
 ];
 
-export const ClientSelectionModal: React.FC<ClientSelectionModalProps> = ({ isOpen, onClose }) => {
+export function ClientSelectionModal({
+  isOpen,
+  onClose,
+  selected,
+  onSelect,
+}: ClientSelectionModalProps) {
+  const [pending, setPending] = useState<FdpWrapper>(selected);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setPending(selected);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, selected]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
-      <div
-        className="bg-[#18181b]/70 backdrop-blur-2xl w-[500px] rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col font-sans text-white border border-white/[0.08]"
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="ds-modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="ds-modal ds-client-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="client-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 shrink-0">
+        <header className="ds-modal-header">
           <div>
-            <h2
-              className="text-xl font-semibold tracking-tight"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Select Client
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">Choose target client for injection</p>
+            <p className="ds-overline">Target client</p>
+            <h2 id="client-title">Select detection profile</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5"
-          >
-            <X size={20} />
+          <button className="ds-icon-button" onClick={onClose} aria-label="Close client selection">
+            <X size={16} />
           </button>
-        </div>
+        </header>
 
-        <div className="h-[1px] bg-white/[0.06] mx-7"></div>
-
-        {/* Client List */}
-        <div className="px-7 py-5 space-y-2 max-h-[400px] overflow-y-auto">
+        <div className="ds-client-list" role="radiogroup" aria-label="Supported clients">
           {clients.map((client) => {
-            const isActive = client.status === 'active';
-            const isLocked = client.status === 'locked';
-
+            const isActive = client.id === pending;
             return (
-              <div
+              <button
                 key={client.id}
-                className={`p-3.5 rounded-xl flex items-center justify-between transition-all ${
-                  isActive
-                    ? 'bg-[var(--accent-500)]/10 border border-[var(--accent-500)]/20'
-                    : isLocked
-                      ? 'bg-black/10 border border-white/[0.04] opacity-45'
-                      : 'bg-black/20 border border-white/[0.06] hover:bg-black/30 cursor-pointer'
-                }`}
+                type="button"
+                className={`ds-client-option ${isActive ? 'active' : ''}`}
+                data-client={client.id}
+                role="radio"
+                aria-checked={isActive}
+                onClick={() => setPending(client.id)}
               >
-                <div className="flex items-center gap-3.5">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden ${
-                      isActive ? 'bg-[var(--accent-500)]/15' : 'bg-white/5'
-                    }`}
-                  >
-                    <img
-                      src={client.logo}
-                      alt={client.name}
-                      className={`w-7 h-7 object-contain ${isLocked ? 'grayscale' : ''}`}
-                    />
-                  </div>
-                  <div>
-                    <h3
-                      className={`font-semibold text-sm ${isActive ? 'text-white' : 'text-gray-400'}`}
-                    >
-                      {client.name}
-                    </h3>
-                    <p
-                      className={`text-[10px] mt-0.5 ${isActive ? 'text-[var(--accent-400)]' : 'text-gray-600'}`}
-                    >
-                      {client.statusText}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Toggle */}
-                <div
-                  className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${
-                    isActive ? 'bg-[var(--accent-500)]' : 'bg-white/10'
-                  } ${isLocked ? 'cursor-not-allowed' : ''}`}
-                >
-                  <div
-                    className={`absolute top-1 w-3 h-3 rounded-full shadow-sm transition-all duration-300 ${
-                      isActive ? 'right-1 bg-white' : 'left-1 bg-gray-500'
-                    }`}
-                  ></div>
-                </div>
-              </div>
+                <span className="ds-client-logo">
+                  <img src={client.logo} alt={`${client.name} logo`} />
+                </span>
+                <span>
+                  <strong>{client.name}</strong>
+                  <small>{client.statusText}</small>
+                </span>
+                <span className="ds-client-check">{isActive && <Check size={13} />}</span>
+              </button>
             );
           })}
         </div>
 
-        {/* Footer */}
-        <div className="px-7 py-4 shrink-0 border-t border-white/[0.06] flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white text-xs font-bold rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
-          >
-            <Check size={14} />
-            Confirm
-          </button>
-        </div>
-      </div>
+        <footer className="ds-modal-footer">
+          <span className="ds-field-help">This preference is saved locally.</span>
+          <div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              icon={<Check size={14} />}
+              onClick={() => {
+                onSelect(pending);
+                onClose();
+              }}
+            >
+              Save profile
+            </Button>
+          </div>
+        </footer>
+      </section>
     </div>
   );
-};
+}

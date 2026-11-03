@@ -1,167 +1,362 @@
-import React, { useState, useRef } from 'react';
-import { X, Folder, Check, ExternalLink } from './Icons';
-import { Download, File } from 'lucide-react';
-import { openExternal } from '../utils/openExternal';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  FolderOpen,
+  FolderSearch,
+  Layers,
+  Loader2,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { PROJECT_LABELS } from '../data/projects';
+import { isTauriRuntime } from '../utils/runtime';
+import type { PayloadConfiguration, PayloadId, PayloadStatus } from '../types/tauri';
+import { Button } from './ui/Button';
 
 interface VersionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  fdpPath: string;
-  setFdpPath: (path: string) => void;
+  configuration: PayloadConfiguration;
+  onSave: (configuration: PayloadConfiguration) => Promise<void>;
 }
 
-export const VersionModal: React.FC<VersionModalProps> = ({
-  isOpen,
-  onClose,
-  fdpPath,
-  setFdpPath,
-}) => {
-  const [filePath, setFilePath] = useState(fdpPath || 'release.jar');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+type JarField = 'visualsJar' | 'fdpclientJar';
+
+const PROJECTS: Array<{ id: PayloadId; field: JarField; detail: string; mark: ReactNode }> = [
+  {
+    id: 'visuals',
+    field: 'visualsJar',
+    detail: 'Effects, HUD and weapons for Minecraft 1.8.9',
+    mark: <Sparkles size={17} aria-hidden="true" />,
+  },
+  {
+    id: 'fdpclient',
+    field: 'fdpclientJar',
+    detail: 'Client for Minecraft 1.8.9',
+    mark: <img src="/img/icon/social/fdp-logo.png" alt="" />,
+  },
+];
+
+const STATE_LABELS: Record<PayloadStatus['state'], string> = {
+  ready: 'Ready',
+  missing: 'No JAR',
+  invalid: 'Wrong file',
+};
+
+function samePath(first: string, second: string): boolean {
+  return first.toLowerCase() === second.toLowerCase();
+}
+
+function describeFile(status: PayloadStatus): string {
+  const size = `${(status.sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (!samePath(status.path, status.installPath)) {
+    return `${size}. Saving copies it to ${status.installPath}`;
+  }
+  const date = status.modifiedMs
+    ? `, updated ${new Date(status.modifiedMs).toLocaleString('en-GB', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })}`
+    : '';
+  return `${status.detected ? 'Found on this PC and installed. ' : ''}${size}${date}`;
+}
+
+export function VersionModal({ isOpen, onClose, configuration, onSave }: VersionModalProps) {
+  const [draft, setDraft] = useState(configuration);
+  const [statuses, setStatuses] = useState<Partial<Record<PayloadId, PayloadStatus>>>({});
+  const [pickingField, setPickingField] = useState<JarField | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const inspection = useRef(0);
+
+  const inspect = useCallback(async (current: PayloadConfiguration, detect: boolean) => {
+    if (!isTauriRuntime()) return;
+    const ticket = ++inspection.current;
+    try {
+      const result = await invoke<PayloadStatus[]>('inspect_payloads', {
+        configuration: current,
+        detect,
+      });
+      if (ticket !== inspection.current) return;
+      setStatuses(Object.fromEntries(result.map((status) => [status.id, status])));
+      setDraft((latest) => {
+        const next = { ...latest };
+        for (const status of result) {
+          const project = PROJECTS.find((candidate) => candidate.id === status.id);
+          if (project) next[project.field] = status.path;
+        }
+        return next;
+      });
+    } catch (reason) {
+      if (ticket === inspection.current) setError(String(reason));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const opening = { ...configuration, selected: [...configuration.selected] };
+    setDraft(opening);
+    setStatuses({});
+    setError('');
+    void inspect(opening, true);
+  }, [configuration, inspect, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const path = (file as any).path || file.name;
-      setFilePath(path);
-      setFdpPath(path);
+  const toggleProject = (id: PayloadId) => {
+    setDraft((current) => ({
+      ...current,
+      selected: current.allowMultiple
+        ? current.selected.includes(id)
+          ? current.selected.filter((value) => value !== id)
+          : [...current.selected, id]
+        : [id],
+    }));
+    setError('');
+  };
+
+  const setLoadBoth = (allowMultiple: boolean) => {
+    setDraft((current) => ({
+      ...current,
+      allowMultiple,
+      selected: allowMultiple ? current.selected : current.selected.slice(0, 1),
+    }));
+    setError('');
+  };
+
+  const pickJar = async (field: JarField) => {
+    if (!isTauriRuntime()) {
+      setError('The file picker is available in the desktop application.');
+      return;
+    }
+    setPickingField(field);
+    setError('');
+    try {
+      const path = await invoke<string | null>('pick_jar_file');
+      if (path) {
+        const next = { ...draft, [field]: path };
+        setDraft(next);
+        await inspect(next, false);
+      }
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setPickingField(null);
     }
   };
 
-  const openFileBrowser = () => {
-    fileInputRef.current?.click();
+  const reveal = (path: string) => {
+    if (!isTauriRuntime()) return;
+    void invoke('reveal_in_explorer', { path }).catch((reason: unknown) =>
+      setError(String(reason))
+    );
+  };
+
+  const blockedProject = draft.selected.find((id) => {
+    const state = statuses[id]?.state;
+    return state === 'missing' || state === 'invalid';
+  });
+
+  const save = async () => {
+    if (!draft.selected.length) {
+      setError('Select a project to load.');
+      return;
+    }
+    setIsSaving(true);
+    setError('');
+    try {
+      await onSave(draft);
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
-      <div
-        className="bg-[#18181b]/70 backdrop-blur-2xl w-[520px] rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col font-sans text-white border border-white/[0.08]"
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="ds-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSaving) onClose();
+      }}
+    >
+      <section
+        className="ds-modal ds-project-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 shrink-0">
-          <div className="flex items-center gap-3">
-            <img
-              src="/img/icon/social/icon-version-mc.png"
-              alt="Minecraft"
-              className="w-8 h-8 object-contain"
-            />
+        <header className="ds-modal-header">
+          <div className="ds-title-with-icon">
+            <span className="ds-project-header-mark" aria-hidden="true">
+              <Layers size={17} />
+            </span>
             <div>
-              <h2
-                className="text-xl font-semibold tracking-tight"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Client Configuration
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">Select your target jar file</p>
+              <p className="ds-overline">Start loads</p>
+              <h2 id="project-title">Choose a project</h2>
             </div>
           </div>
           <button
+            type="button"
+            className="ds-icon-button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5"
+            disabled={isSaving}
+            aria-label="Close project selection"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
-        </div>
+        </header>
 
-        <div className="h-[1px] bg-white/[0.06] mx-7"></div>
-
-        {/* Content */}
-        <div className="px-7 py-5 space-y-5">
-          {/* Download Banner */}
+        <div className="ds-project-body">
           <div
-            onClick={() => openExternal('https://fdpinfo.github.io/download')}
-            className="p-4 rounded-xl bg-black/20 border border-white/[0.06] hover:border-[var(--accent-500)]/30 cursor-pointer group transition-all flex items-center gap-4"
+            className="ds-project-list"
+            role={draft.allowMultiple ? 'group' : 'radiogroup'}
+            aria-label="Projects"
           >
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent-500)]/15 flex items-center justify-center text-[var(--accent-500)] group-hover:scale-110 transition-transform">
-              <Download size={20} />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-white font-semibold text-sm group-hover:text-[var(--accent-400)] transition-colors">
-                Download Latest Client
-              </h3>
-              <p className="text-gray-500 text-[11px] mt-0.5">
-                Missing the jar? Get the latest version here.
-              </p>
-            </div>
-            <ExternalLink
-              size={14}
-              className="text-gray-600 group-hover:text-white transition-colors"
-            />
+            {PROJECTS.map((project) => {
+              const label = PROJECT_LABELS[project.id];
+              const isSelected = draft.selected.includes(project.id);
+              const status = statuses[project.id];
+              const path = draft[project.field];
+              return (
+                <article
+                  key={project.id}
+                  className={`ds-project-card ${isSelected ? 'is-selected' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="ds-project-pick"
+                    role={draft.allowMultiple ? 'checkbox' : 'radio'}
+                    aria-checked={isSelected}
+                    disabled={isSaving}
+                    onClick={() => toggleProject(project.id)}
+                  >
+                    <span className="ds-project-mark">{project.mark}</span>
+                    <span className="ds-project-title">
+                      <strong>{label}</strong>
+                      <small>{project.detail}</small>
+                    </span>
+                    {status ? (
+                      <span className={`ds-project-state is-${status.state}`}>
+                        {status.state === 'ready' ? (
+                          <CheckCircle2 size={12} aria-hidden="true" />
+                        ) : (
+                          <AlertCircle size={12} aria-hidden="true" />
+                        )}
+                        {STATE_LABELS[status.state]}
+                      </span>
+                    ) : (
+                      <span className="ds-project-state">
+                        <Loader2 size={12} className="ds-spin" aria-hidden="true" />
+                        Checking
+                      </span>
+                    )}
+                    <span
+                      className={`ds-project-check ${draft.allowMultiple ? 'is-square' : ''}`}
+                      aria-hidden="true"
+                    >
+                      {isSelected && <Check size={12} />}
+                    </span>
+                  </button>
+
+                  <div className="ds-project-file">
+                    <input
+                      value={path}
+                      readOnly
+                      spellCheck={false}
+                      disabled={isSaving}
+                      title={path}
+                      placeholder="Finding the folder on this PC…"
+                      aria-label={`${label} JAR location`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => reveal(path)}
+                      disabled={isSaving || !path}
+                      title="Show in folder"
+                      aria-label={`Show the ${label} folder`}
+                    >
+                      <FolderSearch size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void pickJar(project.field)}
+                      disabled={pickingField !== null || isSaving}
+                      title="Choose file"
+                      aria-label={`Choose the ${label} JAR`}
+                    >
+                      <FolderOpen size={15} />
+                    </button>
+                  </div>
+
+                  {status && status.state === 'ready' && (
+                    <p className="ds-project-note">{describeFile(status)}</p>
+                  )}
+                  {status && status.state !== 'ready' && (
+                    <p className="ds-project-note is-error">{status.message}</p>
+                  )}
+                </article>
+              );
+            })}
           </div>
 
-          {/* Custom Jar Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <File size={14} className="text-[var(--accent-500)]" />
-              Target Jar File
-            </label>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={filePath}
-                onChange={(e) => {
-                  setFilePath(e.target.value);
-                }}
-                placeholder="C:\Users\...\release.jar"
-                className="flex-1 bg-black/20 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-[var(--accent-500)]/50 transition-colors placeholder:text-gray-600 font-mono"
-              />
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".jar"
-              />
-              <button
-                onClick={openFileBrowser}
-                className="bg-black/20 hover:bg-black/30 border border-white/[0.08] hover:border-[var(--accent-500)]/30 text-gray-400 hover:text-white px-4 rounded-xl transition-all flex items-center justify-center active:scale-95"
-              >
-                <Folder size={18} />
-              </button>
-            </div>
+          <div className="ds-project-both">
+            <span>
+              <strong>Load both at once</strong>
+              <small>Off: only the selected project loads.</small>
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.allowMultiple}
+              aria-label="Load both at once"
+              className={`ds-switch ${draft.allowMultiple ? 'active' : ''}`}
+              disabled={isSaving}
+              onClick={() => setLoadBoth(!draft.allowMultiple)}
+            >
+              <span />
+            </button>
           </div>
 
-          {/* Info Box */}
-          <div className="p-4 rounded-xl bg-[var(--accent-500)]/5 border border-[var(--accent-500)]/10">
-            <div className="flex items-start gap-3">
-              <div className="mt-1 shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-400)] shadow-[0_0_8px_var(--accent-500)] animate-pulse"></div>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-gray-200">System Ready</h4>
-                <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-                  The injector will automatically detect the selected jar process. Ensure the file
-                  path is correct before proceeding.
-                </p>
-              </div>
-            </div>
-          </div>
+          {error && (
+            <p className="ds-project-note is-error" role="alert">
+              {error}
+            </p>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="px-7 py-4 shrink-0 border-t border-white/[0.06] flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              setFdpPath(filePath);
-              onClose();
-            }}
-            className="px-6 py-2.5 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white text-xs font-bold rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
-          >
-            <Check size={14} />
-            Save Configuration
-          </button>
-        </div>
-      </div>
+        <footer className="ds-modal-footer">
+          <span className="ds-project-footnote">Restart Minecraft before switching projects.</span>
+          <div>
+            <Button variant="secondary" size="md" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => void save()}
+              loading={isSaving}
+              disabled={Boolean(blockedProject) || !draft.selected.length}
+            >
+              Save selection
+            </Button>
+          </div>
+        </footer>
+      </section>
     </div>
   );
-};
+}

@@ -76,7 +76,7 @@ export const Plus = createSvgIcon('/img/icon/icon-plus.svg', 'Plus');
 export const Prev = createSvgIcon('/img/icon/icon-prev.svg', 'Previous');
 export const Next = createSvgIcon('/img/icon/icon-next.svg', 'Next');
 
-// ZAVZ Logo
+// ZAVZ logo (legacy alias kept for existing internal components).
 export const ZavzLogo = () => (
   <img src="/img/icon/icon.png" alt="ZAVZ" width="48" height="48" className="object-contain" />
 );

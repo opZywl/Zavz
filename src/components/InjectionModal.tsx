@@ -1,28 +1,61 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { X, FileCode, Zap, CheckCircle } from './Icons';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Crosshair,
+  FileCode2,
+  FolderOpen,
+  Gamepad2,
+  Layers,
+  Radar,
+  RefreshCw,
+  ShieldCheck,
+  X,
+  Zap,
+} from 'lucide-react';
+import { Button } from './ui/Button';
+import type { InjectMode, InjectOptions, MinecraftClientInfo } from '../types/tauri';
 
-type InjectionMode = 'manual' | 'fdp';
+type Step = 'select' | 'manual' | 'detect' | 'injecting' | 'error' | 'success';
+type DetectSelection = 'all' | number;
 
 interface InjectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onInject: (mode: InjectionMode) => Promise<void>;
+  onInject: (
+    mode: InjectMode,
+    options?: InjectOptions,
+    onProgress?: (progress: number, message: string) => void
+  ) => Promise<void>;
   dllPath: string;
   setDllPath: (path: string) => void;
   fdpMode: boolean;
   setFdpMode: (mode: boolean) => void;
 }
 
-type Step = 'select' | 'manual' | 'injecting' | 'success';
-
 interface SelectedDll {
   name: string;
   path: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const InjectionModal: React.FC<InjectionModalProps> = ({
+const KIND_LABELS: Record<string, string> = {
+  lunar: 'LunarClient',
+  cheatbreaker: 'CheatBreaker',
+  badlion: 'BadlionClient',
+  cmclient: 'CMClient',
+  vanilla: 'Vanilla',
+  forge: 'Forge',
+  minecraft: 'Minecraft',
+};
+
+function clientLabel(kind: string): string {
+  return KIND_LABELS[kind.toLowerCase()] || kind || 'Minecraft';
+}
+
+export function InjectionModal({
   isOpen,
   onClose,
   onInject,
@@ -30,86 +63,138 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
   setDllPath,
   fdpMode: _fdpMode,
   setFdpMode,
-}) => {
-  if (!isOpen) return null;
-
+}: InjectionModalProps) {
   const [step, setStep] = useState<Step>('select');
-  const [activeMode, setActiveMode] = useState<InjectionMode | null>(null);
+  const [activeMode, setActiveMode] = useState<InjectMode | null>(null);
   const [selectedFile, setSelectedFile] = useState<SelectedDll | null>(null);
   const [manualError, setManualError] = useState('');
+  const [detectError, setDetectError] = useState('');
   const [isPickingFile, setIsPickingFile] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [logText, setLogText] = useState('Initializing...');
+  const [logText, setLogText] = useState('Initializing native operation…');
+  const [operationError, setOperationError] = useState('');
+  const [clients, setClients] = useState<MinecraftClientInfo[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [detectSelection, setDetectSelection] = useState<DetectSelection>('all');
+  const [injectOptions, setInjectOptions] = useState<InjectOptions | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onInjectRef = useRef(onInject);
 
   useEffect(() => {
-    if (isOpen) {
-      setStep('select');
-      setActiveMode(null);
-      setSelectedFile(null);
-      setManualError('');
-      setProgress(0);
-      setLogText('Initializing...');
-    }
+    onInjectRef.current = onInject;
+  }, [onInject]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setStep('select');
+    setActiveMode(null);
+    setSelectedFile(null);
+    setManualError('');
+    setDetectError('');
+    setProgress(0);
+    setLogText('Initializing native operation…');
+    setOperationError('');
+    setClients([]);
+    setDetectSelection('all');
+    setInjectOptions(undefined);
   }, [isOpen]);
 
+  const fetchClients = useCallback(async () => {
+    setClientsLoading(true);
+    setDetectError('');
+    try {
+      const result = await invoke<MinecraftClientInfo[]>('list_minecraft_clients');
+      const list = result || [];
+      setClients(list);
+      setDetectSelection('all');
+      if (list.length === 0) {
+        setDetectError('No Minecraft clients found.');
+      }
+    } catch (reason) {
+      setClients([]);
+      setDetectError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setClientsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (step !== 'injecting') return;
+    if (!isOpen || step !== 'detect') return;
+    void fetchClients();
+  }, [fetchClients, isOpen, step]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && step !== 'injecting') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, step]);
+
+  useEffect(() => {
+    if (!isOpen || step !== 'injecting') return;
 
     let cancelled = false;
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return 90;
-        const increment = Math.random() * 2 + 0.5;
-        const newProgress = prev + increment;
-        if (newProgress > 10 && newProgress < 30) setLogText('Scanning process memory...');
-        if (newProgress > 30 && newProgress < 50) setLogText('Allocating memory space...');
-        if (newProgress > 50 && newProgress < 70) setLogText('Writing payload...');
-        if (newProgress > 70) setLogText('Hijacking threads...');
-        return Math.min(newProgress, 90);
-      });
-    }, 50);
+    let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+    let unlisten: UnlistenFn | null = null;
+    setProgress(5);
+    setOperationError('');
+    setLogText('Preparing the injection request…');
 
     const runInjection = async () => {
       try {
+        unlisten = await listen<{ progress: number; message: string }>(
+          'injection-progress',
+          (event) => {
+            if (cancelled) return;
+            setProgress(event.payload.progress);
+            setLogText(event.payload.message);
+          }
+        );
+        if (cancelled) {
+          unlisten();
+          return;
+        }
         if (!activeMode) throw new Error('No injection mode selected.');
-        await onInject(activeMode);
+        await onInjectRef.current(activeMode, injectOptions, (nextProgress, message) => {
+          if (cancelled) return;
+          setProgress(nextProgress);
+          setLogText(message);
+        });
 
         if (!cancelled) {
           setProgress(100);
-          setLogText('Finalizing injection...');
-          setTimeout(() => {
+          setLogText('Native injection completed.');
+          transitionTimer = setTimeout(() => {
             if (!cancelled) setStep('success');
-          }, 800);
+          }, 650);
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          setLogText('Injection failed!');
-          setTimeout(() => {
-            if (!cancelled) {
-              setStep(activeMode === 'manual' ? 'manual' : 'select');
-            }
-          }, 1600);
+          const message = error instanceof Error ? error.message : String(error);
+          setProgress(0);
+          setLogText(message || 'Injection failed. Review the target and try again.');
+          setOperationError(message || 'Injection failed. Review the target and try again.');
+          setStep('error');
         }
-      } finally {
-        clearInterval(progressInterval);
       }
     };
 
-    runInjection();
-
+    void runInjection();
     return () => {
       cancelled = true;
-      clearInterval(progressInterval);
+      if (transitionTimer) clearTimeout(transitionTimer);
+      unlisten?.();
     };
-  }, [activeMode, step]);
+  }, [activeMode, injectOptions, isOpen, step]);
+
+  if (!isOpen) return null;
 
   const extractNativePath = (file: File): string | null => {
-    const maybePath = (file as File & { path?: string }).path;
-    if (!maybePath || maybePath.startsWith('C:\\fakepath\\')) {
-      return null;
-    }
-    return maybePath;
+    const nativePath = (file as File & { path?: string }).path;
+    return nativePath && !nativePath.startsWith('C:\\fakepath\\') ? nativePath : null;
   };
 
   const setManualDll = (path: string, name: string) => {
@@ -118,19 +203,16 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
     setManualError('');
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
-
-    const file = e.target.files[0];
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     const nativePath = extractNativePath(file);
-
     if (!nativePath) {
       setSelectedFile(null);
       setDllPath('');
-      setManualError('Absolute path unavailable. Use "Browse DLL" below.');
+      setManualError('The absolute path is unavailable. Use the native file picker.');
       return;
     }
-
     setManualDll(nativePath, file.name);
   };
 
@@ -140,252 +222,366 @@ export const InjectionModal: React.FC<InjectionModalProps> = ({
     try {
       const selectedPath = await invoke<string | null>('pick_dll_file');
       if (!selectedPath) return;
-
       const normalizedPath = selectedPath.replace(/\//g, '\\');
-      const fileName = normalizedPath.split('\\').pop() || normalizedPath;
-      setManualDll(normalizedPath, fileName);
+      setManualDll(normalizedPath, normalizedPath.split('\\').pop() || normalizedPath);
     } catch {
-      setManualError('Failed to open native picker. Try drag and drop.');
+      setManualError('The native picker could not be opened. Try again.');
     } finally {
       setIsPickingFile(false);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    const nativePath = extractNativePath(file);
+    if (!nativePath) {
+      setManualError('The dropped file path is unavailable. Use the native file picker.');
+      return;
+    }
+    setManualDll(nativePath, file.name);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!e.dataTransfer.files?.[0]) return;
-
-    const droppedFile = e.dataTransfer.files[0];
-    const nativePath = extractNativePath(droppedFile);
-
-    if (!nativePath) {
-      setManualError('Dropped file path is unavailable. Use "Browse DLL".');
+  const handleDetectInject = () => {
+    if (clients.length === 0) {
+      setDetectError('No Minecraft clients found.');
       return;
     }
 
-    setManualDll(nativePath, droppedFile.name);
+    if (detectSelection === 'all') {
+      setInjectOptions({ pids: clients.map((client) => client.pid) });
+    } else {
+      setInjectOptions({ target: String(detectSelection) });
+    }
+
+    setFdpMode(true);
+    setActiveMode('detect');
+    setDetectError('');
+    setStep('injecting');
   };
 
+  const title =
+    step === 'select'
+      ? 'Select injection mode'
+      : step === 'manual'
+        ? 'Manual payload'
+        : step === 'detect'
+          ? 'Detect clients'
+          : step === 'error'
+            ? 'Injection failed'
+            : 'Injection';
+
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
-      <div
-        className="bg-[#18181b]/70 backdrop-blur-2xl w-[580px] min-h-[380px] rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col font-sans text-white border border-white/[0.08] relative"
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="ds-modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && step !== 'injecting') onClose();
+      }}
+    >
+      <section
+        className="ds-modal ds-injection-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="injection-title"
       >
         {step !== 'injecting' && step !== 'success' && (
-          <div className="flex items-center justify-between px-7 py-5 shrink-0">
-            <h2
-              className="text-xl font-semibold tracking-tight"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              {step === 'select' && 'Select Injection Mode'}
-              {step === 'manual' && 'Manual Injection'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <header className="ds-modal-header">
+            <div>
+              <p className="ds-overline">Native operation</p>
+              <h2 id="injection-title">{title}</h2>
+            </div>
+            <div className="ds-header-actions">
+              {step === 'detect' && (
+                <button
+                  className="ds-icon-button"
+                  onClick={() => void fetchClients()}
+                  disabled={clientsLoading}
+                  aria-label="Refresh client list"
+                >
+                  <RefreshCw size={15} className={clientsLoading ? 'animate-spin' : ''} />
+                </button>
+              )}
+              <button className="ds-icon-button" onClick={onClose} aria-label="Close injection">
+                <X size={16} />
+              </button>
+            </div>
+          </header>
         )}
 
-        {step !== 'injecting' && step !== 'success' && (
-          <div className="h-[1px] bg-white/[0.06] mx-7"></div>
-        )}
-
-        <div className="flex-1 p-7 flex flex-col justify-center">
+        <div className="ds-injection-body">
           {step === 'select' && (
-            <div className="grid grid-cols-2 gap-4 h-full">
+            <div className="ds-mode-grid">
               <button
+                className="ds-mode-option"
                 onClick={() => {
                   setFdpMode(false);
                   setActiveMode('manual');
                   setManualError('');
                   setStep('manual');
                 }}
-                className="group relative bg-black/20 hover:bg-black/30 rounded-xl p-6 flex flex-col items-center justify-center gap-4 border border-white/[0.06] hover:border-[var(--accent-500)]/30 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <FileCode size={28} className="text-blue-400" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-white font-semibold text-base">Manual Mode</h3>
-                  <p className="text-gray-500 text-[11px] mt-1.5">Select your own .dll file</p>
-                </div>
+                <span className="ds-mode-icon-row">
+                  <span className="ds-icon-tile">
+                    <FolderOpen size={20} />
+                  </span>
+                  <span className="ds-icon-tile soft">
+                    <FileCode2 size={16} />
+                  </span>
+                </span>
+                <span>
+                  <strong>Manual</strong>
+                  <small>Pick a local DLL payload with the secure native file picker.</small>
+                </span>
               </button>
-
               <button
+                className="ds-mode-option accent"
                 onClick={() => {
                   setFdpMode(true);
-                  setActiveMode('fdp');
-                  setStep('injecting');
+                  setActiveMode('detect');
+                  setDetectError('');
+                  setStep('detect');
                 }}
-                className="group relative bg-black/20 hover:bg-black/30 rounded-xl p-6 flex flex-col items-center justify-center gap-4 border border-white/[0.06] hover:border-[var(--accent-500)]/30 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-2xl bg-[var(--accent-500)]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Zap size={28} className="text-[var(--accent-500)]" fill="currentColor" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-white font-semibold text-base">FDP Mode</h3>
-                  <p className="text-gray-500 text-[11px] mt-1.5">Auto-inject optimal config</p>
-                </div>
+                <span className="ds-mode-icon-row">
+                  <span className="ds-icon-tile">
+                    <Radar size={20} />
+                  </span>
+                  <span className="ds-icon-tile soft">
+                    <Crosshair size={16} />
+                  </span>
+                </span>
+                <span>
+                  <strong>Detect</strong>
+                  <small>Scan running Minecraft clients and inject into selected PIDs.</small>
+                </span>
               </button>
             </div>
           )}
 
           {step === 'manual' && (
-            <div className="h-full flex flex-col gap-5">
-              {!selectedFile ? (
-                <div className="flex-1 flex flex-col gap-4">
-                  <div
-                    className="flex-1 border-2 border-dashed border-white/[0.08] hover:border-[var(--accent-500)]/40 bg-black/10 rounded-xl flex flex-col items-center justify-center gap-4 transition-colors cursor-pointer group"
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <input
-                      type="file"
-                      className="hidden"
-                      ref={fileInputRef}
-                      accept=".dll,.lib"
-                      onChange={handleFileSelect}
-                    />
-                    <div className="w-14 h-14 rounded-2xl bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
-                      <FileCode size={24} className="text-[var(--accent-500)]" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="text-white font-semibold text-base group-hover:text-[var(--accent-400)] transition-colors">
-                        Click to select DLL or Drag & Drop
-                      </h3>
-                      <p className="text-gray-600 text-xs mt-1">Supported formats: .dll, .lib</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleBrowseDll}
-                    disabled={isPickingFile}
-                    className="px-5 py-2.5 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all"
-                  >
-                    {isPickingFile ? 'Opening picker...' : 'Browse DLL (Native)'}
-                  </button>
-
-                  {manualError && (
-                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                      {manualError}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center gap-5">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/[0.08] flex items-center justify-center relative">
-                    <FileCode size={32} className="text-[var(--accent-500)]" />
-                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-[#18181b]">
-                      <CheckCircle size={12} className="text-white" />
-                    </div>
-                  </div>
-
-                  <div className="bg-black/20 border border-white/[0.08] rounded-xl px-4 py-3 flex items-center gap-3 max-w-full">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-500)] animate-pulse"></div>
-                    <span className="font-mono text-sm text-gray-300 truncate max-w-[280px]">
-                      {selectedFile.name}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setDllPath('');
-                      }}
-                      className="ml-2 text-gray-500 hover:text-red-400 transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setFdpMode(false);
-                      setActiveMode('manual');
-                      setStep('injecting');
-                    }}
-                    className="mt-2 px-8 py-3 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white font-bold rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
-                  >
-                    <Zap size={16} fill="currentColor" />
-                    Inject Payload
-                  </button>
-                </div>
+            <div className="ds-manual-payload">
+              <div
+                className={`ds-drop-zone ${selectedFile ? 'selected' : ''}`}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click();
+                }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".dll,.lib"
+                  onChange={handleFileSelect}
+                  hidden
+                />
+                {selectedFile ? <CheckCircle2 size={26} /> : <FileCode2 size={26} />}
+                <strong>{selectedFile?.name || 'Drop a DLL here'}</strong>
+                <span>
+                  {selectedFile
+                    ? 'Payload path validated and ready.'
+                    : 'Or select a file using the native Windows picker.'}
+                </span>
+              </div>
+              <Button
+                variant="secondary"
+                loading={isPickingFile}
+                icon={<FolderOpen size={15} />}
+                onClick={() => void handleBrowseDll()}
+              >
+                Browse DLL
+              </Button>
+              {manualError && (
+                <p className="ds-field-error" role="alert">
+                  {manualError}
+                </p>
               )}
+              <div className="ds-modal-inline-actions">
+                <Button
+                  variant="ghost"
+                  icon={<ArrowLeft size={15} />}
+                  onClick={() => setStep('select')}
+                >
+                  Back
+                </Button>
+                <Button
+                  icon={<Zap size={15} />}
+                  disabled={!selectedFile}
+                  onClick={() => {
+                    setFdpMode(false);
+                    setActiveMode('manual');
+                    setInjectOptions(undefined);
+                    setStep('injecting');
+                  }}
+                >
+                  Inject
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === 'detect' && (
+            <div className="ds-detect-panel">
+              <div className="ds-detect-list" aria-live="polite">
+                {clientsLoading && (
+                  <div className="ds-process-state">
+                    <RefreshCw size={20} className="animate-spin" />
+                    <strong>Scanning Minecraft clients…</strong>
+                    <span>Looking for LunarClient, CheatBreaker, Badlion, and more.</span>
+                  </div>
+                )}
+
+                {!clientsLoading && clients.length === 0 && (
+                  <div className="ds-process-state">
+                    <Gamepad2 size={22} />
+                    <strong>No clients detected</strong>
+                    <span>
+                      Open LunarClient, CheatBreaker, Badlion, CMClient, or Vanilla first.
+                    </span>
+                  </div>
+                )}
+
+                {!clientsLoading && clients.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      className={`ds-process-item ${detectSelection === 'all' ? 'selected' : ''}`}
+                      onClick={() => setDetectSelection('all')}
+                    >
+                      <span className="ds-icon-tile">
+                        <Layers size={16} />
+                      </span>
+                      <span>
+                        <strong>All</strong>
+                        <small>
+                          Inject into every detected client ({clients.length}{' '}
+                          {clients.length === 1 ? 'process' : 'processes'})
+                        </small>
+                      </span>
+                    </button>
+                    {clients.map((client) => (
+                      <button
+                        type="button"
+                        className={`ds-process-item ${detectSelection === client.pid ? 'selected' : ''}`}
+                        key={client.pid}
+                        onClick={() => setDetectSelection(client.pid)}
+                      >
+                        <span className="ds-icon-tile">
+                          <Crosshair size={16} />
+                        </span>
+                        <span>
+                          <strong>
+                            {clientLabel(client.kind)} · PID {client.pid}
+                          </strong>
+                          <small>
+                            {client.name}
+                            {client.title ? ` · ${client.title}` : ''}
+                          </small>
+                        </span>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {detectError && (
+                <p className="ds-field-error" role="alert">
+                  {detectError}
+                </p>
+              )}
+
+              <div className="ds-modal-inline-actions">
+                <Button
+                  variant="ghost"
+                  icon={<ArrowLeft size={15} />}
+                  onClick={() => setStep('select')}
+                >
+                  Back
+                </Button>
+                <Button
+                  icon={<Zap size={15} />}
+                  loading={clientsLoading}
+                  onClick={handleDetectInject}
+                >
+                  Inject
+                </Button>
+              </div>
             </div>
           )}
 
           {step === 'injecting' && (
-            <div className="h-full flex flex-col items-center justify-center text-center relative">
-              <div className="relative mb-8">
-                <div
-                  className="w-20 h-20 rounded-full border-[3px] border-white/5 border-t-[var(--accent-500)] border-r-[var(--accent-500)] animate-spin"
-                  style={{ animationDuration: '1.5s' }}
-                ></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Zap size={28} className="text-white opacity-80" fill="currentColor" />
-                </div>
+            <div className="ds-operation-state" aria-live="polite">
+              <span className="ds-operation-orbit">
+                <ShieldCheck size={28} />
+              </span>
+              <p className="ds-overline">Protected native operation</p>
+              <h2 id="injection-title">Injecting payload</h2>
+              <p>{logText}</p>
+              <div
+                className="ds-operation-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+              >
+                <span style={{ width: `${progress}%` }} />
               </div>
+            </div>
+          )}
 
-              <div className="space-y-2 mb-10">
-                <span className="text-[10px] font-black tracking-[0.2em] text-[var(--accent-400)] uppercase">
-                  System Override
-                </span>
-                <h2
-                  className="text-2xl font-bold text-white tracking-tight"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
+          {step === 'error' && (
+            <div className="ds-operation-state error" aria-live="assertive">
+              <span className="ds-operation-failure">
+                <AlertTriangle size={30} />
+              </span>
+              <p className="ds-overline">Operation stopped</p>
+              <h2>Payload was not injected</h2>
+              <p className="ds-operation-error-message" role="alert">
+                {operationError || logText}
+              </p>
+              <div className="ds-modal-inline-actions ds-operation-error-actions">
+                <Button
+                  variant="ghost"
+                  icon={<ArrowLeft size={15} />}
+                  onClick={() => {
+                    setOperationError('');
+                    setStep(
+                      activeMode === 'manual'
+                        ? 'manual'
+                        : activeMode === 'detect'
+                          ? 'detect'
+                          : 'select'
+                    );
+                  }}
                 >
-                  Injecting Payload
-                </h2>
-                <p className="text-sm text-gray-500 font-mono">{logText}</p>
-              </div>
-
-              <div className="w-full max-w-sm">
-                <div className="flex justify-between text-[10px] font-bold text-gray-600 mb-2 uppercase tracking-wider">
-                  <span>Progress</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[var(--accent-500)] transition-all duration-100 ease-out"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
+                  Back
+                </Button>
+                <Button variant="secondary" onClick={onClose}>
+                  Close
+                </Button>
               </div>
             </div>
           )}
 
           {step === 'success' && (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6 border border-green-500/20">
-                <CheckCircle size={40} className="text-green-500" />
-              </div>
-              <h2
-                className="text-2xl font-bold text-white mb-2"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Injection Successful
-              </h2>
-              <p className="text-gray-500 text-sm mb-8">
-                The payload has been successfully injected into the target process.
-              </p>
-
-              <button
-                onClick={onClose}
-                className="px-8 py-2.5 bg-black/20 hover:bg-black/30 border border-white/[0.08] hover:border-white/[0.12] text-white font-semibold rounded-xl transition-all"
-              >
-                Close Window
-              </button>
+            <div className="ds-operation-state success" aria-live="polite">
+              <span className="ds-operation-success">
+                <CheckCircle2 size={32} />
+              </span>
+              <p className="ds-overline">Operation complete</p>
+              <h2 id="injection-title">Injection successful</h2>
+              <p>The payload was injected into the selected target process.</p>
+              <Button variant="secondary" onClick={onClose}>
+                Close
+              </Button>
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
-};
+}

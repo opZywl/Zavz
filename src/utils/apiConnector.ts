@@ -1,41 +1,34 @@
-/**
- * API Connector - Fetches remote config from injector.txt
- * Equivalent of APIConnectorUtils.kt
- *
- * Remote format: ///version///alertBoolean
- * Example: ///v1.0.0///true
- */
-import { URLRegistry } from './urlRegistry';
-
 export interface InjectorConfig {
   version: string;
   showUpdateAlert: boolean;
+  source: 'remote' | 'local';
 }
 
 const DEFAULT_CONFIG: InjectorConfig = {
-  version: 'v1.0.0',
+  version: 'v1.1.0',
   showUpdateAlert: false,
+  source: 'local',
 };
 
 /**
- * Fetches and parses the injector config from the remote server.
+ * Reads the packaged release channel. The previous remote endpoint now returns
+ * HTTP 404, so release metadata is kept offline-first and can be replaced in a
+ * future signed update without producing renderer network errors.
  */
 export async function fetchInjectorConfig(): Promise<InjectorConfig> {
   try {
-    const response = await fetch(URLRegistry.INJECTOR);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const text = await response.text();
-
-    // Parse format: ///version///alert
-    const parts = text.trim().split('///').filter(Boolean);
-    if (parts.length < 2) return DEFAULT_CONFIG;
-
+    const response = await fetch('/config/injector.json');
+    if (!response.ok) return DEFAULT_CONFIG;
+    const value = (await response.json()) as Record<string, unknown>;
     return {
-      version: parts[0].trim(),
-      showUpdateAlert: parts[1].trim().toLowerCase() === 'true',
+      version: typeof value.version === 'string' ? value.version : DEFAULT_CONFIG.version,
+      showUpdateAlert:
+        typeof value.showUpdateAlert === 'boolean'
+          ? value.showUpdateAlert
+          : DEFAULT_CONFIG.showUpdateAlert,
+      source: 'local',
     };
-  } catch (error) {
-    console.warn('[APIConnector] Failed to fetch injector config:', error);
+  } catch {
     return DEFAULT_CONFIG;
   }
 }

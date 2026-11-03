@@ -22,10 +22,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
 
   return (
     <div
-      className={`group relative w-full rounded-2xl overflow-hidden border transition-all duration-300 flex flex-row h-[190px] ${
+      className={`group relative w-full rounded-2xl overflow-hidden border transition-all duration-fast flex flex-row h-[190px] shadow-ds ${
         isEmpty
-          ? 'bg-[#111114] border-white/[0.04] hover:border-white/[0.08] cursor-default'
-          : 'bg-[#111114] border-white/[0.06] hover:border-[var(--accent-500)]/30 cursor-pointer hover:shadow-[0_4px_24px_var(--accent-shadow-light)]'
+          ? 'bg-ink-900 border-white/[0.04] hover:border-white/[0.08] cursor-default'
+          : 'bg-ink-900 border-white/[0.06] hover:border-[var(--accent-500)]/30 cursor-pointer hover:shadow-[0_4px_24px_var(--accent-shadow-light)]'
       }`}
       onClick={() => !isEmpty && onAction?.(item)}
     >
@@ -37,12 +37,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
             style={{ backgroundImage: `url(${item.imageUrl})` }}
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-900)]/60 to-[#0a0a0c]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-900)]/50 to-ink-950" />
         )}
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/40 to-[#111114]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/40 to-ink-900" />
         <div className="absolute inset-0 bg-black/20" />
-        {/* Category text - LARGE and bold like LiquidBounce */}
         <div className="absolute inset-0 flex items-end p-4">
           <span
             className="text-white font-black text-[18px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
@@ -56,13 +54,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
       {/* Right: Content */}
       <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
         {isEmpty ? (
-          /* Empty card: Just show subtle placeholder */
           <div className="flex-1 flex items-center justify-center">
             <span className="text-xs text-gray-600 font-medium tracking-wide">Coming Soon</span>
           </div>
         ) : (
           <>
-            {/* Top: Title + Date */}
             <div>
               <div className="flex items-start justify-between gap-2">
                 <h3
@@ -82,8 +78,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({ item, onAction }) => {
               </p>
             </div>
 
-            {/* Bottom: Action Button - Accent filled like LiquidBounce */}
-            <button className="w-full bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white text-[11px] font-bold py-2 rounded-lg transition-all active:scale-[0.97] mt-2 shadow-sm">
+            <button
+              type="button"
+              className="w-full bg-[var(--accent-600)] hover:bg-[var(--accent-500)] text-white text-[11px] font-bold py-2 rounded-lg transition-all duration-fast active:scale-[0.97] mt-2 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-400)]"
+            >
               {item.linkText}
             </button>
           </>

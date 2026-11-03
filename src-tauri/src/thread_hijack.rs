@@ -90,6 +90,61 @@ fn get_remote_module_base(pid: u32, module_name: &str) -> Result<u64, String> {
 }
 
 #[cfg(target_os = "windows")]
+pub fn is_module_loaded(pid: u32, dll_path: &Path) -> Result<bool, String> {
+    let snapshot =
+        unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid) };
+    if snapshot == INVALID_HANDLE_VALUE {
+        return Err(format!(
+            "Could not inspect modules in PID {pid}: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
+
+    let expected = dll_path
+        .canonicalize()
+        .unwrap_or_else(|_| dll_path.to_path_buf())
+        .to_string_lossy()
+        .trim_start_matches(r"\\?\")
+        .replace('/', "\\")
+        .to_ascii_lowercase();
+    let mut entry = MODULEENTRY32W {
+        dwSize: std::mem::size_of::<MODULEENTRY32W>() as u32,
+        ..unsafe { std::mem::zeroed() }
+    };
+    let mut found = false;
+    let mut has_entry = unsafe { Module32FirstW(snapshot, &mut entry) } != 0;
+    if !has_entry {
+        unsafe { CloseHandle(snapshot) };
+        return Err(format!("Could not inspect modules in PID {pid}."));
+    }
+
+    while has_entry {
+        let end = entry
+            .szExePath
+            .iter()
+            .position(|&unit| unit == 0)
+            .unwrap_or(entry.szExePath.len());
+        let loaded = String::from_utf16_lossy(&entry.szExePath[..end])
+            .trim_start_matches(r"\\?\")
+            .replace('/', "\\")
+            .to_ascii_lowercase();
+        if loaded == expected {
+            found = true;
+            break;
+        }
+        has_entry = unsafe { Module32NextW(snapshot, &mut entry) } != 0;
+    }
+
+    unsafe { CloseHandle(snapshot) };
+    Ok(found)
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn is_module_loaded(_pid: u32, _dll_path: &std::path::Path) -> Result<bool, String> {
+    Ok(false)
+}
+
+#[cfg(target_os = "windows")]
 fn build_hijack_stub(load_library: u64, dll_path: u64, return_address: u64) -> Vec<u8> {
     let mut code = vec![
         0x48, 0x83, 0xEC, 0x28, // sub rsp, 0x28
@@ -196,18 +251,18 @@ pub fn thread_hijack_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(
         return Err("Failed to write DLL path into remote memory".to_string());
     }
 
-    let local_kernel32 = unsafe { GetModuleHandleA(b"kernel32.dll\0".as_ptr()) };
+    let local_kernel32 = unsafe { GetModuleHandleA(c"kernel32.dll".as_ptr().cast()) };
     if local_kernel32.is_null() {
         unsafe { ResumeThread(thread_handle) };
         unsafe { CloseHandle(thread_handle) };
         return Err("Failed to get local kernel32 handle".to_string());
     }
 
-    let local_load_library = unsafe { GetProcAddress(local_kernel32, b"LoadLibraryA\0".as_ptr()) }
-        .ok_or_else(|| "Failed to get local LoadLibraryA address".to_string())?;
+    let local_load_library =
+        unsafe { GetProcAddress(local_kernel32, c"LoadLibraryA".as_ptr().cast()) }
+            .ok_or_else(|| "Failed to get local LoadLibraryA address".to_string())?;
 
-    let local_load_library_ptr =
-        unsafe { std::mem::transmute::<_, *const c_void>(local_load_library) };
+    let local_load_library_ptr = local_load_library as *const c_void;
     let local_kernel32_ptr = local_kernel32 as *const c_void;
     let local_load_library_addr = local_load_library_ptr as usize;
     let local_kernel32_addr = local_kernel32_ptr as usize;

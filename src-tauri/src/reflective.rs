@@ -326,7 +326,10 @@ pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
             process_handle,
             std::ptr::null(),
             0,
-            Some(std::mem::transmute(
+            Some(std::mem::transmute::<
+                *const c_void,
+                unsafe extern "system" fn(*mut c_void) -> u32,
+            >(
                 (remote_base as u64 + reflective_rva as u64) as *const c_void,
             )),
             remote_base,
@@ -335,7 +338,7 @@ pub fn reflective_inject(process: &OwnedProcess, dll_path: &Path) -> Result<(), 
         )
     };
 
-    if thread == std::ptr::null_mut() {
+    if thread.is_null() {
         return Err("Failed to create remote thread for ReflectiveLoader".to_string());
     }
 

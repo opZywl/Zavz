@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { X, Search, RefreshCw, Cpu } from './Icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { Cpu, RefreshCw, Search, X } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface Process {
   name: string;
@@ -13,146 +14,143 @@ interface ProcessSelectionModalProps {
   onSelect: (processName: string) => void;
 }
 
-export const ProcessSelectionModal: React.FC<ProcessSelectionModalProps> = ({
-  isOpen,
-  onClose,
-  onSelect,
-}) => {
-  if (!isOpen) return null;
-
+export function ProcessSelectionModal({ isOpen, onClose, onSelect }: ProcessSelectionModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [processes, setProcesses] = useState<Process[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProcesses = async () => {
+  const fetchProcesses = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await invoke<Process[]>('list_processes');
       setProcesses(result || []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
       setProcesses([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchProcesses();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    setSearchTerm('');
+    void fetchProcesses();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fetchProcesses, isOpen, onClose]);
 
   const filteredProcesses = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
     return processes.filter(
-      (p) =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.pid.toString().includes(searchTerm)
+      (process) => process.name.toLowerCase().includes(query) || String(process.pid).includes(query)
     );
-  }, [searchTerm, processes]);
+  }, [processes, searchTerm]);
+
+  if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div
-        className="bg-[#0f0f11] w-[450px] h-[600px] rounded-xl border border-white/10 shadow-2xl flex flex-col font-sans overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+    <div className="ds-modal-backdrop">
+      <section
+        className="ds-modal ds-process-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="process-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-[#141416]">
+        <header className="ds-modal-header">
           <div>
-            <h2 className="text-white font-bold text-lg">Select Process</h2>
-            <p className="text-gray-500 text-xs">{filteredProcesses.length} processes running</p>
+            <p className="ds-overline">Target override</p>
+            <h2 id="process-title">Select client process</h2>
           </div>
-          <div className="flex gap-2">
+          <div className="ds-header-actions">
             <button
-              onClick={fetchProcesses}
-              className={`p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors ${loading ? 'animate-spin' : ''}`}
+              className="ds-icon-button"
+              onClick={() => void fetchProcesses()}
+              disabled={loading}
+              aria-label="Refresh process list"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
             </button>
             <button
+              className="ds-icon-button"
               onClick={onClose}
-              className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"
+              aria-label="Close process selection"
             >
               <X size={16} />
             </button>
           </div>
+        </header>
+
+        <div className="ds-process-search">
+          <Search size={15} />
+          <input
+            autoFocus
+            type="search"
+            placeholder="Search by process name or PID"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            aria-label="Search processes"
+          />
         </div>
 
-        {/* Search */}
-        <div className="p-4 border-b border-white/5">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search by name or PID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-[var(--accent-500)] transition-colors placeholder:text-gray-600"
-            />
-          </div>
-        </div>
-
-        {/* List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div className="ds-process-list" aria-live="polite">
           {loading && (
-            <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
-              <RefreshCw size={16} className="animate-spin mr-2" /> Loading processes...
+            <div className="ds-process-state">
+              <RefreshCw size={20} className="animate-spin" />
+              <strong>Reading running processes…</strong>
             </div>
           )}
           {!loading && error && (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm gap-2">
-              <p className="text-red-400">{error}</p>
-              <button
-                onClick={fetchProcesses}
-                className="text-[var(--accent-400)] hover:text-[var(--accent-500)] text-xs font-bold"
-              >
+            <div className="ds-process-state error">
+              <Cpu size={22} />
+              <strong>Process list unavailable</strong>
+              <span>{error}</span>
+              <Button variant="secondary" size="sm" onClick={() => void fetchProcesses()}>
                 Retry
-              </button>
+              </Button>
             </div>
           )}
           {!loading && !error && filteredProcesses.length === 0 && (
-            <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
-              {searchTerm ? 'No processes match your search' : 'No processes found'}
+            <div className="ds-process-state">
+              <Cpu size={22} />
+              <strong>{searchTerm ? 'No matching process' : 'No eligible process found'}</strong>
+              <span>Launch a supported Minecraft client and refresh this list.</span>
             </div>
           )}
-          {filteredProcesses.map((proc) => (
-            <button
-              key={proc.pid}
-              onClick={() => {
-                onSelect(proc.name);
-                onClose();
-              }}
-              className="w-full text-left p-3 rounded-lg hover:bg-[#18181b] hover:border hover:border-white/5 border border-transparent transition-all group flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded bg-[#202023] flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-[var(--accent-500)] transition-colors">
+          {!loading &&
+            !error &&
+            filteredProcesses.map((process) => (
+              <button
+                className="ds-process-item"
+                key={process.pid}
+                onClick={() => {
+                  onSelect(process.name);
+                  onClose();
+                }}
+              >
+                <span className="ds-icon-tile">
                   <Cpu size={16} />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-gray-200 group-hover:text-white">
-                    {proc.name}
-                  </div>
-                  <div className="text-[10px] text-gray-500 group-hover:text-gray-400 font-mono">
-                    PID: {proc.pid}
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
+                </span>
+                <span>
+                  <strong>{process.name}</strong>
+                  <small>PID {process.pid}</small>
+                </span>
+              </button>
+            ))}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-white/5 bg-[#141416] flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-[#18181b] hover:bg-[#202023] border border-white/10 rounded-lg text-xs font-bold text-gray-300 transition-colors"
-          >
+        <footer className="ds-modal-footer">
+          <span className="ds-field-help">{filteredProcesses.length} processes available</span>
+          <Button variant="secondary" size="sm" onClick={onClose}>
             Cancel
-          </button>
-        </div>
-      </div>
+          </Button>
+        </footer>
+      </section>
     </div>
   );
-};
+}

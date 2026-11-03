@@ -1,84 +1,146 @@
-import React, { useState } from 'react';
-import { ZavzLogo } from './Icons';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Check, UserRound, X } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface NicknameModalProps {
+  initialValue?: string;
   onConfirm: (nickname: string) => void;
+  onClose?: () => void;
 }
 
-export const NicknameModal: React.FC<NicknameModalProps> = ({ onConfirm }) => {
-  const [value, setValue] = useState('');
+type PreviewState = 'idle' | 'loading' | 'ready' | 'error';
 
-  const handleSubmit = () => {
-    const trimmed = value.trim();
-    if (trimmed.length > 0) {
-      onConfirm(trimmed);
-    }
-  };
+const NICKNAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSubmit();
+export function NicknameModal({ initialValue = '', onConfirm, onClose }: NicknameModalProps) {
+  const [value, setValue] = useState(initialValue);
+  const [previewState, setPreviewState] = useState<PreviewState>('idle');
+  const nickname = value.trim();
+  const isValid = NICKNAME_PATTERN.test(nickname);
+  const avatarUrl = useMemo(
+    () => (isValid ? `https://mc-heads.net/avatar/${encodeURIComponent(nickname)}/96` : ''),
+    [isValid, nickname]
+  );
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    setPreviewState(isValid ? 'loading' : 'idle');
+  }, [avatarUrl, isValid]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onClose) onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (isValid) onConfirm(nickname);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#09090b]">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[var(--accent-500)] opacity-[0.07] blur-[120px] rounded-full pointer-events-none"></div>
-
-      <div className="relative flex flex-col items-center gap-8 w-[400px]">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="transform transition-transform hover:rotate-12 duration-300">
-            <ZavzLogo />
+    <div
+      className="ds-modal-backdrop ds-nickname-backdrop"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <form
+        onSubmit={submit}
+        className="ds-modal ds-nickname-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nickname-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="ds-modal-header">
+          <div>
+            <p className="ds-overline">Local profile</p>
+            <h2 id="nickname-title">Minecraft nickname</h2>
           </div>
-          <div className="flex flex-col items-center">
-            <span
-              className="font-extrabold text-4xl tracking-tighter text-white"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              ZAVZ
+          {onClose && (
+            <button type="button" className="ds-icon-button" onClick={onClose} aria-label="Close">
+              <X size={17} />
+            </button>
+          )}
+        </header>
+
+        <div className="ds-nickname-body">
+          <div className={`ds-skin-preview is-${previewState}`} aria-live="polite">
+            <span>
+              <UserRound size={24} />
             </span>
-            <div className="bg-[var(--accent-600)] px-3 py-0.5 rounded-md shadow-lg shadow-[var(--accent-shadow)] -mt-1">
-              <span
-                className="font-black text-xs text-white block tracking-[0.2em] uppercase"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                INJECTOR
-              </span>
-            </div>
+            {avatarUrl && (
+              <img
+                key={avatarUrl}
+                src={avatarUrl}
+                alt={`Minecraft skin preview for ${nickname}`}
+                onLoad={() => setPreviewState('ready')}
+                onError={() => setPreviewState('error')}
+              />
+            )}
           </div>
-        </div>
 
-        {/* Nickname input */}
-        <div className="w-full space-y-3">
-          <label className="text-gray-400 text-xs font-bold uppercase tracking-wider block text-center">
-            Enter your Minecraft nickname
+          <div className="ds-nickname-copy">
+            <h3>{initialValue ? 'Update your player profile.' : 'Set up your player profile.'}</h3>
+            <p>
+              The nickname and skin are stored locally and restored the next time you open the app.
+            </p>
+          </div>
+
+          <label className="ds-onboarding-field">
+            <span>Nickname</span>
+            <input
+              type="text"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder="Enter nickname"
+              minLength={3}
+              maxLength={16}
+              pattern="[A-Za-z0-9_]{3,16}"
+              autoComplete="off"
+              spellCheck={false}
+              autoFocus
+              aria-describedby="nickname-help"
+            />
           </label>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Nickname"
-            autoFocus
-            maxLength={16}
-            className="w-full bg-[#121214] border border-white/10 rounded-xl px-5 py-4 text-base text-white text-center focus:outline-none focus:border-[var(--accent-500)] focus:ring-1 focus:ring-[var(--accent-500-30)] transition-all placeholder:text-gray-600"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          />
+          <p id="nickname-help" className={`ds-field-hint ${nickname && !isValid ? 'error' : ''}`}>
+            {nickname && !isValid
+              ? 'Use 3–16 letters, numbers or underscores.'
+              : previewState === 'loading'
+                ? 'Loading skin preview…'
+                : previewState === 'error'
+                  ? 'Skin unavailable. A local fallback will be used.'
+                  : previewState === 'ready'
+                    ? 'Skin found and ready.'
+                    : 'Use 3–16 letters, numbers or underscores.'}
+          </p>
         </div>
 
-        {/* Continue button */}
-        <button
-          onClick={handleSubmit}
-          disabled={value.trim().length === 0}
-          className="w-full py-3.5 bg-[var(--accent-600)] hover:bg-[var(--accent-500)] disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-[0_4px_20px_var(--accent-shadow)] hover:shadow-[0_6px_24px_var(--accent-shadow)] transition-all transform active:scale-[0.98] uppercase tracking-wider"
-          style={{ fontFamily: "'Poppins', sans-serif" }}
-        >
-          Continue
-        </button>
-
-        {/* Version tag */}
-        <span className="text-gray-600 text-xs font-medium">by Zywl</span>
-      </div>
+        <footer className="ds-modal-footer">
+          <span />
+          <div>
+            {onClose && (
+              <Button type="button" variant="secondary" size="md" onClick={onClose}>
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={!isValid}
+              icon={<Check size={15} />}
+            >
+              Save profile
+            </Button>
+          </div>
+        </footer>
+      </form>
     </div>
   );
-};
+}

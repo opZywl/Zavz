@@ -1,7 +1,7 @@
 {
-  "productName": "Zavz Injector",
-  "version": "1.0.0",
-  "identifier": "com.zavz",
+  "productName": "ZAVZ",
+  "version": "1.1.2",
+  "identifier": "xyz.lucas-lima.zavz",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -9,37 +9,38 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Zavz",
+        "title": "ZAVZ",
         "label": "main",
-        "width": 1100,
+        "width": 1000,
         "minWidth": 1000,
         "height": 670,
-        "minHeight": 800,
+        "minHeight": 670,
         "resizable": true,
         "fullscreen": false,
         "center": true,
         "decorations": false,
-        "transparent": false
+        "transparent": true,
+        "visible": true,
+        "focus": true,
+        "windowEffects": {
+          "effects": ["acrylic"]
+        },
+        "shadow": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:5173 ws://localhost:5173 https://fdpinfo.github.io; img-src 'self' asset: https://asset.localhost https://mc-heads.net data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'"
     }
   },
   "bundle": {
     "active": true,
     "category": "Utility",
-    "icon": [
-      "icons/icon.ico",
-      "icons/icon.png"
-    ],
-    "targets": "all",
-    "resources": [
-      "../src/load/*"
-    ],
+    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "targets": ["nsis"],
+    "resources": ["../src/load/*"],
     "windows": {
       "webviewInstallMode": {
         "type": "embedBootstrapper"
@@ -47,4 +48,3 @@
     }
   }
 }
-

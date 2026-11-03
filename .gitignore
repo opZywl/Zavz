@@ -6,6 +6,9 @@ build
 *.exe
 *.dll
 
+# Compiled into the executable, so a clean checkout needs it
+!src/load/native.dll
+
 # Node.js
 node_modules/
 dist/
@@ -29,3 +32,7 @@ Thumbs.db
 src-tauri/Cargo.lock
 src-tauri/gen/
 src-tauri/icons/icon-*.png
+
+# Built from the Visuals and LiquidBounce-DLL repositories
+src/load/visuals.jar
+src/load/release.jar
