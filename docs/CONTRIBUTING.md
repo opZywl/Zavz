@@ -15,7 +15,7 @@ Thank you for your interest in contributing to Zavz! This document provides guid
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/YZYInjector.git
+git clone https://github.com/opZywl/YZYInjector.git
 cd YZYInjector
 ```
 

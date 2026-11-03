@@ -30,7 +30,7 @@ Zavz is a modern desktop application built with **Tauri v2**, combining a React 
 ## Project Structure
 
 ```
-YZYInjector/
+ZAVZ/
 ├── src/                        # Frontend (React/TypeScript)
 │   ├── components/            # React components
 │   │   ├── ui/               # Reusable UI components
