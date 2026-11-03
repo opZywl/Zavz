@@ -14,7 +14,7 @@ group_imports = "StdExternalCrate"
 reorder_imports = true
 
 # Code style
-newline_style = "Unix"
+newline_style = "Auto"
 use_small_heuristics = "Default"
 fn_single_line = false
 where_single_line = false

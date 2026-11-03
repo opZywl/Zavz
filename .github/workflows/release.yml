@@ -37,7 +37,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: `v${{ steps.get_version.outputs.VERSION }}`,
-              name: `Zavz v${{ steps.get_version.outputs.VERSION }}`,
+              name: `ZAVZ v${{ steps.get_version.outputs.VERSION }}`,
               body: 'See CHANGELOG.md for details',
               draft: true,
               prerelease: false
