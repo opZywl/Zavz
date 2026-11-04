@@ -34,34 +34,78 @@ impl PayloadId {
         }
     }
 
-    fn required_entries(self) -> [&'static str; 2] {
+    fn entry(self) -> &'static str {
         match self {
-            Self::Visuals => [
-                "xyz/zywl/visuals/injection/Loader.class",
-                "xyz/zywl/visuals/core/ZywlVisuals.class",
-            ],
-            Self::Fdpclient => [
-                "net/zywl/fdp/injection/Loader.class",
-                "net/zywl/fdp/FDPClient.class",
-            ],
+            Self::Visuals => "xyz/zywl/visuals/injection/Loader.class",
+            Self::Fdpclient => "net/zywl/fdp/injection/Loader.class",
         }
     }
+
+    fn known_cores(self) -> &'static [&'static str] {
+        match self {
+            Self::Visuals => &[
+                "xyz/zywl/visuals/core/Core.class",
+                "xyz/zywl/visuals/core/ZywlVisuals.class",
+            ],
+            Self::Fdpclient => &["net/zywl/fdp/FDPClient.class"],
+        }
+    }
+}
+
+fn manifest_value(archive: &mut zip::ZipArchive<fs::File>, key: &str) -> Option<String> {
+    let mut text = String::new();
+    archive
+        .by_name("META-INF/MANIFEST.MF")
+        .ok()?
+        .read_to_string(&mut text)
+        .ok()?;
+    let mut value: Option<String> = None;
+    let mut reading = false;
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix(' ') {
+            if reading {
+                if let Some(found) = value.as_mut() {
+                    found.push_str(rest);
+                }
+            }
+            continue;
+        }
+        reading = false;
+        if let Some((name, rest)) = line.split_once(':') {
+            if name.trim().eq_ignore_ascii_case(key) {
+                value = Some(rest.trim_start().to_string());
+                reading = true;
+            }
+        }
+    }
+    value
+        .map(|found| found.trim().to_string())
+        .filter(|found| !found.is_empty())
 }
 
 pub fn validate_jar(source: &Path, id: PayloadId) -> Result<(), String> {
     let label = id.label();
     let file =
         fs::File::open(source).map_err(|e| format!("The {label} JAR cannot be opened: {e}"))?;
-    let archive = zip::ZipArchive::new(file)
+    let mut archive = zip::ZipArchive::new(file)
         .map_err(|e| format!("The {label} JAR is not a valid archive: {e}"))?;
-    for name in id.required_entries() {
-        if archive.index_for_name(name).is_none() {
-            return Err(format!(
-                "This file is not a {label} JAR. Choose the correct file."
-            ));
-        }
+    let wrong = || format!("This file is not a {label} JAR. Choose the correct file.");
+    if archive.index_for_name(id.entry()).is_none() {
+        return Err(wrong());
     }
-    Ok(())
+    if id
+        .known_cores()
+        .iter()
+        .any(|name| archive.index_for_name(name).is_some())
+    {
+        return Ok(());
+    }
+    let declared = manifest_value(&mut archive, "Zywl-Payload-Class")
+        .map(|class| format!("{}.class", class.replace('.', "/")));
+    match declared {
+        Some(name) if archive.index_for_name(&name).is_some() => Ok(()),
+        _ => Err(wrong()),
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -690,5 +734,62 @@ mod tests {
             healed.fdpclient_jar,
             jar_path(PayloadId::Fdpclient).to_string_lossy()
         );
+    }
+
+    fn jar(name: &str, entries: &[(&str, &str)]) -> PathBuf {
+        let path = std::env::temp_dir().join(format!("zavz-{}-{name}.jar", std::process::id()));
+        let mut writer = zip::ZipWriter::new(fs::File::create(&path).unwrap());
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Stored);
+        for (entry, text) in entries {
+            writer.start_file(*entry, options).unwrap();
+            std::io::Write::write_all(&mut writer, text.as_bytes()).unwrap();
+        }
+        writer.finish().unwrap();
+        path
+    }
+
+    #[test]
+    fn visuals_jars_are_known_by_their_loader_and_payload() {
+        let loader = ("xyz/zywl/visuals/injection/Loader.class", "");
+        let old = jar(
+            "old",
+            &[loader, ("xyz/zywl/visuals/core/ZywlVisuals.class", "")],
+        );
+        let renamed = jar(
+            "renamed",
+            &[loader, ("xyz/zywl/visuals/core/Core.class", "")],
+        );
+        let declared = jar(
+            "declared",
+            &[
+                loader,
+                (
+                    "META-INF/MANIFEST.MF",
+                    "Manifest-Version: 1.0\r\nZywl-Payload-Class: xyz.zywl.visuals.bootst\r\n rap.ZavzBootstrap\r\n\r\n",
+                ),
+                ("xyz/zywl/visuals/bootstrap/ZavzBootstrap.class", ""),
+            ],
+        );
+        let missing = jar(
+            "missing",
+            &[
+                loader,
+                (
+                    "META-INF/MANIFEST.MF",
+                    "Manifest-Version: 1.0\r\nZywl-Payload-Class: xyz.zywl.visuals.Gone\r\n\r\n",
+                ),
+            ],
+        );
+        let no_loader = jar("no-loader", &[("xyz/zywl/visuals/core/Core.class", "")]);
+        assert!(validate_jar(&old, PayloadId::Visuals).is_ok());
+        assert!(validate_jar(&renamed, PayloadId::Visuals).is_ok());
+        assert!(validate_jar(&declared, PayloadId::Visuals).is_ok());
+        assert!(validate_jar(&missing, PayloadId::Visuals).is_err());
+        assert!(validate_jar(&no_loader, PayloadId::Visuals).is_err());
+        assert!(validate_jar(&renamed, PayloadId::Fdpclient).is_err());
+        for path in [old, renamed, declared, missing, no_loader] {
+            let _ = fs::remove_file(path);
+        }
     }
 }

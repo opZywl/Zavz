@@ -9,5 +9,5 @@ ZAVZ creates `.zywl\visuals` and `.zywl\fdpclient` in the home folder of whoever
 To update these files, copy them from their builds:
 ```
 copy <LiquidBounce-DLL>\native\build-vs2022\target\Release\native.dll src\load\
-copy ..\..\..\IdeaProjects\ZywlVisuals\build\libs\visuals-b2.jar src\load\visuals.jar
+copy ..\..\..\IdeaProjects\ZywlVisuals\build\libs\julia-b2.jar src\load\visuals.jar
 ```
