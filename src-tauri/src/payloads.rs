@@ -83,6 +83,10 @@ fn manifest_value(archive: &mut zip::ZipArchive<fs::File>, key: &str) -> Option<
         .filter(|found| !found.is_empty())
 }
 
+fn class_file(class: &str) -> String {
+    format!("{}.class", class.replace('.', "/"))
+}
+
 pub fn validate_jar(source: &Path, id: PayloadId) -> Result<(), String> {
     let label = id.label();
     let file =
@@ -90,7 +94,14 @@ pub fn validate_jar(source: &Path, id: PayloadId) -> Result<(), String> {
     let mut archive = zip::ZipArchive::new(file)
         .map_err(|e| format!("The {label} JAR is not a valid archive: {e}"))?;
     let wrong = || format!("This file is not a {label} JAR. Choose the correct file.");
-    if archive.index_for_name(id.entry()).is_none() {
+    let entry = match id {
+        PayloadId::Visuals => {
+            manifest_value(&mut archive, "Zavz-Entry-Class").map(|class| class_file(&class))
+        }
+        PayloadId::Fdpclient => None,
+    }
+    .unwrap_or_else(|| id.entry().to_string());
+    if archive.index_for_name(&entry).is_none() {
         return Err(wrong());
     }
     if id
@@ -100,9 +111,7 @@ pub fn validate_jar(source: &Path, id: PayloadId) -> Result<(), String> {
     {
         return Ok(());
     }
-    let declared = manifest_value(&mut archive, "Zywl-Payload-Class")
-        .map(|class| format!("{}.class", class.replace('.', "/")));
-    match declared {
+    match manifest_value(&mut archive, "Zywl-Payload-Class").map(|class| class_file(&class)) {
         Some(name) if archive.index_for_name(&name).is_some() => Ok(()),
         _ => Err(wrong()),
     }
@@ -782,13 +791,46 @@ mod tests {
             ],
         );
         let no_loader = jar("no-loader", &[("xyz/zywl/visuals/core/Core.class", "")]);
+        let moved = jar(
+            "moved",
+            &[
+                (
+                    "META-INF/MANIFEST.MF",
+                    "Manifest-Version: 1.0\r\nZavz-Entry-Class: xyz.zywl.julia.injection.Loader\r\nZywl-Payload-Class: xyz.zywl.julia.bootstrap.ZavzBootstrap\r\n\r\n",
+                ),
+                ("xyz/zywl/julia/injection/Loader.class", ""),
+                ("xyz/zywl/julia/bootstrap/ZavzBootstrap.class", ""),
+            ],
+        );
+        let stale_entry = jar(
+            "stale-entry",
+            &[
+                loader,
+                (
+                    "META-INF/MANIFEST.MF",
+                    "Manifest-Version: 1.0\r\nZavz-Entry-Class: xyz.zywl.julia.injection.Loader\r\nZywl-Payload-Class: xyz.zywl.visuals.bootstrap.ZavzBootstrap\r\n\r\n",
+                ),
+                ("xyz/zywl/visuals/bootstrap/ZavzBootstrap.class", ""),
+            ],
+        );
         assert!(validate_jar(&old, PayloadId::Visuals).is_ok());
         assert!(validate_jar(&renamed, PayloadId::Visuals).is_ok());
         assert!(validate_jar(&declared, PayloadId::Visuals).is_ok());
+        assert!(validate_jar(&moved, PayloadId::Visuals).is_ok());
         assert!(validate_jar(&missing, PayloadId::Visuals).is_err());
         assert!(validate_jar(&no_loader, PayloadId::Visuals).is_err());
+        assert!(validate_jar(&stale_entry, PayloadId::Visuals).is_err());
         assert!(validate_jar(&renamed, PayloadId::Fdpclient).is_err());
-        for path in [old, renamed, declared, missing, no_loader] {
+        assert!(validate_jar(&moved, PayloadId::Fdpclient).is_err());
+        for path in [
+            old,
+            renamed,
+            declared,
+            missing,
+            no_loader,
+            moved,
+            stale_entry,
+        ] {
             let _ = fs::remove_file(path);
         }
     }
