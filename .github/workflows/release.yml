@@ -68,6 +68,22 @@ jobs:
         with:
           toolchain: nightly-2026-01-14
 
+      - name: Setup Java headers for the Lunar DLL
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build current FDP Lunar DLL
+        shell: pwsh
+        run: |
+          $taskJava = $env:JAVA_HOME.Replace('\', '/')
+          cmake -S native/fdp-lunar -B build/fdp-lunar -A x64 "-DJAVA_HOME:PATH=$taskJava"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/fdp-lunar --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item build/fdp-lunar/Release/fdp-lunar.dll src/load/fdp-lunar.dll
+
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
@@ -82,12 +98,29 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
+      - name: Compute ZAVZ SHA-256
+        shell: pwsh
+        run: ./.github/scripts/zavz-sha256.ps1
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/ZAVZ.exe
+            src-tauri/target/release/SHA256SUMS.txt
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add SHA-256 to the release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const release_id = Number('${{ needs.create-release.outputs.release_id }}');
+            const sums = fs.readFileSync('src-tauri/target/release/SHA256SUMS.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const { data } = await github.rest.repos.getRelease({ owner, repo, release_id });
+            await github.rest.repos.updateRelease({ owner, repo, release_id, body: `${data.body || ''}\n\n${sums}` });
