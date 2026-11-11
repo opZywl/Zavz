@@ -253,9 +253,37 @@ async fn list_minecraft_clients() -> Result<Vec<MinecraftClientInfo>, String> {
         .collect())
 }
 
+#[cfg(windows)]
+const WINDOW_EDGE_COLORREF: u32 = 0x0012_1212;
+
+#[cfg(windows)]
+fn hide_window_border(window: &tauri::WebviewWindow) {
+    use windows_sys::Win32::Graphics::Dwm::{
+        DwmSetWindowAttribute, DWMWA_BORDER_COLOR, DWMWA_CAPTION_COLOR,
+    };
+
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    for attribute in [DWMWA_BORDER_COLOR, DWMWA_CAPTION_COLOR] {
+        unsafe {
+            DwmSetWindowAttribute(
+                hwnd.0,
+                attribute as u32,
+                (&WINDOW_EDGE_COLORREF as *const u32).cast(),
+                std::mem::size_of::<u32>() as u32,
+            );
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn hide_window_border(_window: &tauri::WebviewWindow) {}
+
 fn configure_window(app: &AppHandle) -> Result<(), tauri::Error> {
     if let Some(window) = app.get_webview_window("main") {
         window.set_decorations(false)?;
+        hide_window_border(&window);
         let _ = window.center();
         let _ = window.show();
         let _ = window.set_focus();
