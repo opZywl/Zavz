@@ -55,12 +55,20 @@ export function ProcessSelectionModal({ isOpen, onClose, onSelect }: ProcessSele
   if (!isOpen) return null;
 
   return (
-    <div className="ds-modal-backdrop">
+    <div
+      className="ds-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        event.stopPropagation();
+        onClose();
+      }}
+    >
       <section
         className="ds-modal ds-process-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="process-title"
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="ds-modal-header">
           <div>
