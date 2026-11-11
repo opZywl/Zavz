@@ -2114,6 +2114,7 @@ textarea,
   gap: 8px;
 }
 .ds-form-grid label,
+.ds-form-grid .ds-form-field,
 .ds-full-field {
   display: flex;
   min-width: 0;
@@ -4669,6 +4670,7 @@ textarea,
 }
 
 .ds-settings-modal .ds-form-grid label,
+.ds-settings-modal .ds-form-grid .ds-form-field,
 .ds-settings-modal .ds-full-field {
   color: #d0d0d5;
   font-size: 9px;
@@ -4685,6 +4687,144 @@ textarea,
   background: rgba(12, 14, 19, 0.48);
   color: #ffffff;
   font-size: 10px;
+}
+
+.ds-settings-modal .ds-field-button {
+  transition:
+    background var(--ds-duration-fast),
+    border-color var(--ds-duration-fast);
+}
+
+.ds-settings-modal .ds-field-button:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.55);
+  background: rgba(22, 24, 30, 0.62);
+}
+
+.ds-select {
+  position: relative;
+  min-width: 0;
+}
+
+.ds-select-value {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.ds-select-value strong {
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-select-value small {
+  overflow: hidden;
+  color: #8b8b94;
+  font-size: 9px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-select-value small::before {
+  margin-right: 6px;
+  color: #5d5d66;
+  content: '·';
+}
+
+.ds-select-trigger svg {
+  flex: 0 0 auto;
+  color: #a1a1aa;
+  transition:
+    transform var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast);
+}
+
+.ds-select-trigger:hover svg,
+.ds-select.is-open .ds-select-trigger svg {
+  color: #ffffff;
+}
+
+.ds-select.is-open .ds-select-trigger {
+  border-bottom-color: rgba(255, 255, 255, 0.78);
+  background: rgba(22, 24, 30, 0.62);
+}
+
+.ds-select.is-open .ds-select-trigger svg {
+  transform: rotate(180deg);
+}
+
+.ds-select-menu {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 220px;
+  gap: 2px;
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  background: rgba(14, 15, 19, 0.97);
+  box-shadow:
+    0 18px 44px -12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  list-style: none;
+  transform-origin: top center;
+  backdrop-filter: blur(24px) saturate(130%);
+  animation: ds-select-in var(--ds-duration-fast) var(--ds-ease-emphasized);
+}
+
+@keyframes ds-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ds-select-option {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  color: #c9c9cf;
+  cursor: pointer;
+  transition:
+    background var(--ds-duration-instant),
+    color var(--ds-duration-instant);
+}
+
+.ds-select-option.is-active {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+
+.ds-select-option.is-selected {
+  color: #ffffff;
+}
+
+.ds-select-option.is-selected strong {
+  font-weight: 650;
+}
+
+.ds-select-option svg {
+  flex: 0 0 auto;
+  color: #ffffff;
 }
 
 .ds-settings-modal .ds-toggle-list {

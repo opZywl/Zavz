@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Activity, Crosshair, EyeOff, FileCog, Save, Settings, Terminal, X } from 'lucide-react';
 import { ProcessSelectionModal } from './ProcessSelectionModal';
 import { Button } from './ui/Button';
+import { Select, type SelectOption } from './ui/Select';
 
 export interface SettingsDraft {
   targetProcess: string;
@@ -22,12 +23,12 @@ interface SettingsModalProps extends SettingsDraft {
   onLaunchJvm: (jvmArgs: string) => void;
 }
 
-const METHODS = [
-  { value: 'Standard', label: 'Standard · LoadLibrary' },
-  { value: 'Manual', label: 'Manual Map · Stealth' },
-  { value: 'Thread Hijack', label: 'Thread Hijack · Existing thread' },
-  { value: 'Reflective', label: 'Reflective · Self-mapping' },
-] as const;
+const METHODS: readonly SelectOption[] = [
+  { value: 'Standard', label: 'Standard', hint: 'LoadLibrary' },
+  { value: 'Manual', label: 'Manual Map', hint: 'Stealth' },
+  { value: 'Thread Hijack', label: 'Thread Hijack', hint: 'Existing thread' },
+  { value: 'Reflective', label: 'Reflective', hint: 'Self-mapping' },
+];
 
 export function SettingsModal({
   isOpen,
@@ -137,19 +138,15 @@ export function SettingsModal({
                     <Activity size={14} />
                   </button>
                 </label>
-                <label>
+                <div className="ds-form-field">
                   <span>Injection method</span>
-                  <select
+                  <Select
+                    label="Injection method"
                     value={draft.injectionMethod}
-                    onChange={(event) => patchDraft({ injectionMethod: event.target.value })}
-                  >
-                    {METHODS.map((method) => (
-                      <option key={method.value} value={method.value}>
-                        {method.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    options={METHODS}
+                    onChange={(injectionMethod) => patchDraft({ injectionMethod })}
+                  />
+                </div>
               </div>
             </section>
           )}
