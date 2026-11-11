@@ -2,9 +2,9 @@
   {
     "id": "n1",
     "category": "Release",
-    "title": "FDP b17 released",
+    "title": "FDPClient Released",
     "date": "17/07/2026",
-    "description": "FDP b17 is now available with updated injection compatibility and client fixes.",
+    "description": "FDPClient is now available with updated injection compatibility and client fixes.",
     "imageUrl": "/img/icon/social/fdp-logo.png",
     "linkText": "Changelog",
     "url": "https://fdpinfo.github.io/next/"

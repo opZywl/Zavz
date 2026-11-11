@@ -165,7 +165,7 @@ fn bundled_jar_name(id: PayloadId) -> &'static str {
     match id {
         PayloadId::Visuals => "visuals.jar",
         PayloadId::Fdpclient => "release.jar",
-        PayloadId::Fdplunar => "fdp-lunar.jar",
+        PayloadId::Fdplunar => "fdpclient-inject.jar",
     }
 }
 
@@ -336,7 +336,7 @@ fn inject_selected(app: &AppHandle, request: InjectRequest) -> Result<String, St
         configuration.validate()?;
     }
     if early_lunar && !matches!(request.method, InjectionMethod::Standard) {
-        return Err("FDP Lunar uses the Standard DLL loader during game startup.".into());
+        return Err("FDPClient Inject uses the Standard DLL loader during game startup.".into());
     }
     emit_injection_progress(app, 5, "Checking the selected game process…");
     // Validate target process name
@@ -377,7 +377,7 @@ fn inject_selected(app: &AppHandle, request: InjectRequest) -> Result<String, St
             .iter()
             .any(|p| p.pid == resolved.pid && p.kind == "lunar")
     {
-        return Err("FDP Lunar can only be loaded into a Lunar game JVM.".into());
+        return Err("FDPClient Inject can only be loaded into a Lunar game JVM.".into());
     }
 
     // Hard refuse browsers even if title matched "Badlion"

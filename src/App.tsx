@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -9,7 +10,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { projectNames } from './data/projects';
+import { payloadsForProfile, projectNames } from './data/projects';
 import { Header } from './components/Header';
 import { NicknameModal } from './components/NicknameModal';
 import { UpdateAlertModal } from './components/UpdateAlertModal';
@@ -95,13 +96,17 @@ function App() {
   const [dllPath, setDllPath] = useState('native.dll');
   const [injectionMethod, setInjectionMethod] = useState('Standard');
   const [fdpMode, setFdpMode] = useState(false);
-  const [payloads, setPayloads] = useState<PayloadConfiguration>({
+  const [configuredPayloads, setPayloads] = useState<PayloadConfiguration>({
     selected: ['visuals'],
     allowMultiple: false,
     visualsJar: '',
     fdpclientJar: '',
     fdpLunarJar: '',
   });
+  const payloads = useMemo(
+    () => payloadsForProfile(configuredPayloads, nickname),
+    [configuredPayloads, nickname]
+  );
   const [fdpWrapper, setFdpWrapper] = useState<FdpWrapper>('auto');
   const [jvmArgs, setJvmArgs] = useState('-Xmx4G -XX:+UseG1GC -noverify');
   const [autoClose, setAutoClose] = useState(false);
@@ -473,6 +478,7 @@ function App() {
   };
 
   const handleNicknameConfirm = (name: string) => {
+    if (watcherActive) void handleWatcherToggle(false);
     localStorage.setItem('zavz-nickname', name);
     setNickname(name);
     setIsNicknameModalOpen(false);
@@ -585,6 +591,7 @@ function App() {
         onLaunchJvm={(args) => void handleLaunchJvm(args)}
       />
       <VersionModal
+        profile={nickname}
         isOpen={isVersionModalOpen}
         onClose={() => setIsVersionModalOpen(false)}
         configuration={payloads}

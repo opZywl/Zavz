@@ -35,9 +35,9 @@ impl PayloadId {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::Visuals => "Visuals",
+            Self::Visuals => "Julia",
             Self::Fdpclient => "FDPClient",
-            Self::Fdplunar => "FDP Lunar",
+            Self::Fdplunar => "FDPClient Inject",
         }
     }
 
@@ -123,10 +123,7 @@ pub fn validate_jar(source: &Path, id: PayloadId) -> Result<(), String> {
         {
             Ok(())
         } else {
-            Err(
-                "Choose the current FDPClient-b17-lunar.jar bundle for native Lunar startup."
-                    .into(),
-            )
+            Err("Choose the current fdpclient-inject.jar bundle for native Lunar startup.".into())
         };
     }
     if id
@@ -235,7 +232,7 @@ impl PayloadConfiguration {
             return Err("Select a project to load.".into());
         }
         if self.selected.contains(&PayloadId::Fdplunar) && self.selected.len() != 1 {
-            return Err("FDP Lunar uses its own startup DLL. Select it on its own.".into());
+            return Err("FDPClient Inject uses its own startup DLL. Select it on its own.".into());
         }
         if self.selected.len() > 2 || (self.selected.len() > 1 && !self.allow_multiple) {
             return Err("Turn on \"Load both\" before selecting both projects.".into());

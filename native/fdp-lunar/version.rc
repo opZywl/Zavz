@@ -11,11 +11,11 @@ BEGIN
   BLOCK "040904B0"
   BEGIN
    VALUE "CompanyName", "opZywl\0"
-   VALUE "FileDescription", "FDPClient Lunar startup loader\0"
+   VALUE "FileDescription", "FDPClient Inject startup loader\0"
    VALUE "FileVersion", "1.0.0.0\0"
    VALUE "LegalCopyright", "opZywl | lucas-lima.xyz | FDPClient contributors\0"
    VALUE "OriginalFilename", "fdp-lunar.dll\0"
-   VALUE "ProductName", "FDPClient Lunar\0"
+   VALUE "ProductName", "FDPClient Inject\0"
   END
  END
  BLOCK "VarFileInfo"

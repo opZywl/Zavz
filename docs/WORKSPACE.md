@@ -16,6 +16,6 @@ ZAVZ is a Tauri 2 app built with React, TypeScript and Rust. You need Windows, N
 6. Build a release: `yarn tauri build`
 
 ### Troubleshooting Workspace Errors
-The build embeds `src/load/native.dll`, which is built from [LiquidBounce-DLL](https://github.com/opZywl/LiquidBounce-DLL). See [src/load/README.md](../src/load/README.md) for how to update it.
+The build embeds the loaders from `src/load`. The FDPClient Inject loader source is in `native/fdp-lunar`. See [src/load/README.md](../src/load/README.md) for how to update the bundled files.
 
 More build details are in [BUILD.md](../BUILD.md).

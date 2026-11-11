@@ -318,7 +318,7 @@ export function InjectionModal({
           {step === 'select' && lunarStartup && (
             <div className="ds-manual-payload">
               <p className="ds-field-help">
-                Choose the current FDP Lunar JAR, start this watcher, then launch Lunar 1.8.9
+                Choose the current FDPClient Inject JAR, start this watcher, then launch Lunar 1.8.9
                 without -javaagent.
               </p>
               <Button
@@ -446,7 +446,7 @@ export function InjectionModal({
                       .catch((error: unknown) => setManualError(String(error)));
                   }}
                 >
-                  Use bundled FDP Lunar DLL
+                  Use bundled FDPClient Inject DLL
                 </Button>
               )}
               {manualError && (

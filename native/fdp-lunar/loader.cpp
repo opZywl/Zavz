@@ -100,7 +100,7 @@ std::string agentArgument(const std::filesystem::path& jar) {
 
 bool requireLunarBeforeMinecraft(JavaVM* vm, JNIEnv* env) {
     if (string(env, property(env, "java.specification.version")) != "17")
-        throw std::runtime_error("The native FDP Lunar loader requires Lunar's Java 17 runtime");
+        throw std::runtime_error("The native FDPClient Inject loader requires Lunar's Java 17 runtime");
     if (string(env, property(env, "java.class.path")).find("lunar-platform-mappings-v1_8.jar") == std::string::npos)
         throw std::runtime_error("Select Lunar Client 1.8.9; this DLL does not support Forge or other game versions");
     if (!string(env, property(env, "fdpclient.lunar.agentRegistered")).empty())
@@ -166,17 +166,17 @@ void requireBundle(JNIEnv* env, const std::filesystem::path& jar) {
     env->DeleteLocalRef(archive);
     env->DeleteLocalRef(type);
     checked(env, "Could not close the selected JAR");
-    if (!valid) throw std::runtime_error("Choose FDPClient-b17-lunar.jar, the self-contained bundle for the current FDP agent");
+    if (!valid) throw std::runtime_error("Choose a self-contained FDPClient Inject bundle. The JAR filename can be changed");
 }
 
 std::string status(JNIEnv* env) {
     jclass agent = env->FindClass(AGENT);
-    checked(env, "The FDP Lunar agent entry could not be resolved");
+    checked(env, "The FDPClient Inject agent entry could not be resolved");
     jmethodID getter = env->GetStaticMethodID(agent, "nativeStatus", "()Ljava/lang/String;");
     checked(env, "The selected JAR has no native startup status API");
     auto value = static_cast<jstring>(env->CallStaticObjectMethod(agent, getter));
     env->DeleteLocalRef(agent);
-    checked(env, "The FDP Lunar status callback failed");
+    checked(env, "The FDPClient Inject status callback failed");
     return string(env, value);
 }
 
@@ -208,7 +208,7 @@ DWORD WINAPI load(LPVOID) {
         if (ini(plan, L"selection", L"version") != L"1" ||
             ini(plan, L"selection", L"pid") != std::to_wstring(GetCurrentProcessId()) ||
             ini(plan, L"selection", L"count") != L"1" || ini(plan, L"payload0", L"id") != L"fdplunar")
-            throw std::runtime_error("Select only FDP Lunar in ZAVZ and choose its JAR before starting the watcher");
+            throw std::runtime_error("Select only FDPClient Inject in ZAVZ and choose its JAR before starting the watcher");
         std::filesystem::path jar(ini(plan, L"payload0", L"jar"));
         if (!jar.is_absolute() || !std::filesystem::is_regular_file(jar) || jar.native().find(L'=') != std::wstring::npos)
             throw std::runtime_error("The selected Lunar JAR path is invalid or contains '='");

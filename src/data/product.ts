@@ -3,12 +3,12 @@ import type { UpdateEntry } from '../types/product';
 
 export const PRODUCT = {
   name: 'ZAVZ',
-  version: '1.1.2',
+  version: '1.0.0',
   minecraftVersion: '1.8.9',
   channel: 'Stable',
   releaseDate: '02/11/2026',
   releaseSummary: 'Native multi-client injection with automatic target detection.',
-  fdpVersion: 'B17',
+  fdpVersion: 'Inject',
   fdpReleaseDate: '17 Jul 2026',
 } as const;
 

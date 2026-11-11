@@ -18,6 +18,7 @@ import type { PayloadConfiguration, PayloadId, PayloadStatus } from '../types/ta
 import { Button } from './ui/Button';
 
 interface VersionModalProps {
+  profile: string;
   isOpen: boolean;
   onClose: () => void;
   configuration: PayloadConfiguration;
@@ -42,8 +43,8 @@ const PROJECTS: Array<{ id: PayloadId; field: JarField; detail: string; mark: Re
   {
     id: 'fdplunar',
     field: 'fdpLunarJar',
-    detail: 'Current FDP agent through DLL. Start the watcher before launching Lunar 1.8.9.',
-    mark: <img src="/img/icon/social/lunar-client_logo.png" alt="" />,
+    detail: 'Client for Minecraft 1.8.9 | Lunar Client Compatible',
+    mark: <img src="/img/icon/social/fdp-logo.png" alt="" />,
   },
 ];
 
@@ -71,7 +72,13 @@ function describeFile(status: PayloadStatus): string {
   return `${status.detected ? 'Found on this PC and installed. ' : ''}${size}${date}`;
 }
 
-export function VersionModal({ isOpen, onClose, configuration, onSave }: VersionModalProps) {
+export function VersionModal({
+  isOpen,
+  onClose,
+  configuration,
+  onSave,
+  profile,
+}: VersionModalProps) {
   const [draft, setDraft] = useState(configuration);
   const [statuses, setStatuses] = useState<Partial<Record<PayloadId, PayloadStatus>>>({});
   const [pickingField, setPickingField] = useState<JarField | null>(null);
@@ -193,6 +200,8 @@ export function VersionModal({ isOpen, onClose, configuration, onSave }: Version
     }
   };
 
+  const projects = PROJECTS.filter((project) => project.id !== 'fdpclient' || profile === 'Zywl');
+
   return (
     <div
       className="ds-modal-backdrop"
@@ -234,7 +243,7 @@ export function VersionModal({ isOpen, onClose, configuration, onSave }: Version
             role={draft.allowMultiple ? 'group' : 'radiogroup'}
             aria-label="Projects"
           >
-            {PROJECTS.map((project) => {
+            {projects.map((project) => {
               const label = PROJECT_LABELS[project.id];
               const isSelected = draft.selected.includes(project.id);
               const status = statuses[project.id];

@@ -1,20 +1,20 @@
 <!-- FDPClient Lunar native loader by opZywl | https://lucas-lima.xyz -->
-# FDP Lunar startup loader
+# FDPClient Inject startup loader
 
-The **FDP Lunar** project loads the current FDPClient Lunar agent through a native x64 DLL during official Lunar Client 1.8.9 startup. It is separate from the legacy **FDPClient** payload and keeps the existing Visuals and legacy loading options.
+The **FDPClient Inject** project loads FDPClient during official Lunar Client 1.8.9 startup. ZAVZ includes its native DLL and also supports Julia.
 
 ## Using it
 
 1. Close Minecraft. Remove FDP's `-javaagent` argument from the Lunar profile if it was configured. Keep other JVM arguments.
-2. Open the JAR window in ZAVZ, select **FDP Lunar**, and choose the current self-contained `FDPClient-<version>-lunar.jar` bundle. The standalone agent or Forge JAR is not the native bundle.
+2. Open the JAR window in ZAVZ, select **FDPClient Inject**, and choose the current self-contained `fdpclient-inject.jar` bundle. The standalone agent or Forge JAR is not the native bundle.
 3. Open the injection window and click **Watch next Lunar startup**.
 4. Start **Lunar Client 1.8.9** from the official launcher. ZAVZ reports success after FDP finishes initializing. With a new FDP configuration, **Right Control** opens its ClickGUI.
 
 The watcher must be armed before the game JVM starts. FDP's mixins add fields and methods, so loading after Minecraft initializes is rejected. The native loader requires Lunar's Java 17 runtime. Other versions and Forge use their existing loading methods.
 
-Manual DLL selection remains available. Use `src/load/fdp-lunar.dll` or **Use bundled FDP Lunar DLL** in the manual picker; select the JAR separately in the JAR window. The DLL is embedded in `ZAVZ.exe` and materialized under `%USERPROFILE%\.zywl\injector`. The selected bundle is copied to `%USERPROFILE%\.zywl\fdplunar\release.jar` using the existing backup behavior.
+Manual DLL selection remains available. Use `src/load/fdp-lunar.dll` or **Use bundled FDPClient Inject DLL** in the manual picker; select the JAR separately in the JAR window. The DLL is embedded in `ZAVZ.exe` and materialized under `%USERPROFILE%\.zywl\injector`. The selected bundle is copied to `%USERPROFILE%\.zywl\fdplunar\release.jar` using the existing backup behavior.
 
-Do not select FDP Lunar together with Visuals or the older FDPClient payload. Existing legacy combinations keep their previous behavior.
+Select FDPClient Inject on its own before starting the watcher.
 
 ## Updating and building
 
@@ -29,11 +29,11 @@ cmake --build build/fdp-lunar --config Release
 Copy-Item build/fdp-lunar/Release/fdp-lunar.dll src/load/fdp-lunar.dll
 ```
 
-Copy the current FDP Lunar bundle to `src/load/fdp-lunar.jar`, then build ZAVZ with `yarn install` and `yarn tauri build --no-bundle`. The JAR is a local build resource and is ignored by Git; the native DLL and its source are included. The normal ZAVZ installer includes the JAR if it is present at build time.
+Copy the current FDPClient Inject bundle to `src/load/fdpclient-inject.jar`, then build ZAVZ with `yarn install` and `yarn tauri build --no-bundle`. The JAR is a local build resource and is ignored by Git; the native DLL and its source are included. The normal ZAVZ installer includes the JAR if it is present at build time.
 
 The JavaScript API and CLI use Tauri 2.12 alongside the Rust backend. Keep `yarn.lock` and `src-tauri/Cargo.lock` when rebuilding to preserve the tested dependency versions.
 
-When both source checkouts are siblings, FDPClient's `native/lunar/build-zavz.ps1` checks and builds the current agent and payload, rebuilds and mirrors the DLL, builds ZAVZ, and copies the current Lunar JAR and `ZAVZ.exe` to the Desktop. It never commits or pushes. FDPClient's ordinary Gradle build also refreshes `src/load/fdp-lunar.jar` in an existing sibling YZYInjector checkout.
+When both source checkouts are siblings, FDPClient's `native/lunar/build-zavz.ps1` checks and builds the current agent and payload, rebuilds and mirrors the DLL, builds ZAVZ, and copies the current Lunar JAR and `ZAVZ.exe` to the Desktop. It never commits or pushes. FDPClient's ordinary Gradle build also refreshes `src/load/fdpclient-inject.jar` in an existing sibling YZYInjector checkout.
 
 ## Diagnostics
 
