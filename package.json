@@ -2,6 +2,13 @@
   "name": "zavz",
   "private": true,
   "version": "1.0.0",
+  "description": "Native multi-client injection with automatic target detection.",
+  "author": "Lucas Lima (Zywl) (https://lucas-lima.xyz)",
+  "homepage": "https://lucas-lima.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opZywl/Zavz.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

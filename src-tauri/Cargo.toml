@@ -1,6 +1,10 @@
 [package]
 name = "zavz"
 version = "1.0.0"
+description = "ZAVZ: native multi-client injection for Minecraft 1.8.9"
+authors = ["Lucas Lima (Zywl)"]
+homepage = "https://lucas-lima.xyz"
+repository = "https://github.com/opZywl/Zavz"
 edition = "2021"
 
 [dependencies]

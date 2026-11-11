@@ -38,6 +38,11 @@
   "bundle": {
     "active": true,
     "category": "Utility",
+    "publisher": "Lucas Lima (Zywl)",
+    "copyright": "Copyright © 2026 Lucas Lima (Zywl)",
+    "homepage": "https://lucas-lima.xyz",
+    "shortDescription": "Native multi-client injection with automatic target detection.",
+    "longDescription": "ZAVZ loads a chosen Java project into a running Minecraft 1.8.9 process. Created by Lucas Lima (Zywl).",
     "icon": ["icons/icon.ico", "icons/icon.png"],
     "targets": ["nsis"],
     "resources": ["../src/load/*"],
