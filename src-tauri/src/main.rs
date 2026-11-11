@@ -11,7 +11,7 @@ mod thread_hijack;
 use std::{fs, path::PathBuf, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use sysinfo::System;
+use sysinfo::{ProcessRefreshKind, System};
 use tauri::{generate_context, AppHandle, Emitter, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use tokio::{sync::oneshot, time::sleep};
@@ -219,25 +219,29 @@ fn load_settings(path: &PathBuf) -> Result<InjectorSettings, String> {
 }
 
 #[tauri::command]
-fn list_processes() -> Result<Vec<ProcessInfo>, String> {
-    let mut system = System::new_all();
-    system.refresh_processes();
+async fn list_processes() -> Result<Vec<ProcessInfo>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let mut system = System::new();
+        system.refresh_processes_specifics(ProcessRefreshKind::new());
 
-    let processes = system
-        .processes()
-        .values()
-        .map(|process| ProcessInfo {
-            pid: process.pid().as_u32(),
-            name: process.name().to_string(),
-        })
-        .collect();
-
-    Ok(processes)
+        system
+            .processes()
+            .values()
+            .map(|process| ProcessInfo {
+                pid: process.pid().as_u32(),
+                name: process.name().to_string(),
+            })
+            .collect::<Vec<ProcessInfo>>()
+    })
+    .await
+    .map_err(|err| format!("Failed to read running processes: {err}"))
 }
 
 #[tauri::command]
-fn list_minecraft_clients() -> Result<Vec<MinecraftClientInfo>, String> {
-    let clients = injector::list_game_clients()?;
+async fn list_minecraft_clients() -> Result<Vec<MinecraftClientInfo>, String> {
+    let clients = tauri::async_runtime::spawn_blocking(injector::list_game_clients)
+        .await
+        .map_err(|err| format!("Failed to detect Minecraft clients: {err}"))??;
     Ok(clients
         .into_iter()
         .map(|client| MinecraftClientInfo {
