@@ -8,6 +8,7 @@ build
 
 # Compiled into the executable, so a clean checkout needs it
 !src/load/native.dll
+!src/load/fdp-lunar.dll
 
 # Node.js
 node_modules/
@@ -29,10 +30,11 @@ Thumbs.db
 *.swo
 
 # Tauri
-src-tauri/Cargo.lock
+!src-tauri/Cargo.lock
 src-tauri/gen/
 src-tauri/icons/icon-*.png
 
 # Built from the Visuals and LiquidBounce-DLL repositories
 src/load/visuals.jar
 src/load/release.jar
+src/load/fdp-lunar.jar

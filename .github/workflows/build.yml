@@ -30,6 +30,22 @@ jobs:
         with:
           toolchain: nightly-2026-01-14
 
+      - name: Setup Java headers for the Lunar DLL
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build current FDP Lunar DLL
+        shell: pwsh
+        run: |
+          $taskJava = $env:JAVA_HOME.Replace('\', '/')
+          cmake -S native/fdp-lunar -B build/fdp-lunar -A x64 "-DJAVA_HOME:PATH=$taskJava"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/fdp-lunar --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item build/fdp-lunar/Release/fdp-lunar.dll src/load/fdp-lunar.dll
+
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
@@ -41,11 +57,11 @@ jobs:
       - name: Build frontend
         run: yarn build
 
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --version 2.9.6 --locked
+      - name: Test Rust backend
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml
 
       - name: Build Tauri app
-        run: cargo tauri build
+        run: yarn tauri build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}

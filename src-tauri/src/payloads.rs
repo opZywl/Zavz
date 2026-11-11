@@ -15,15 +15,21 @@ const LARGEST_JAR_BYTES: u64 = 600 * 1024 * 1024;
 pub enum PayloadId {
     Visuals,
     Fdpclient,
+    Fdplunar,
 }
 
 impl PayloadId {
-    pub const ALL: [PayloadId; 2] = [PayloadId::Visuals, PayloadId::Fdpclient];
+    pub const ALL: [PayloadId; 3] = [
+        PayloadId::Visuals,
+        PayloadId::Fdpclient,
+        PayloadId::Fdplunar,
+    ];
 
     pub fn id(self) -> &'static str {
         match self {
             Self::Visuals => "visuals",
             Self::Fdpclient => "fdpclient",
+            Self::Fdplunar => "fdplunar",
         }
     }
 
@@ -31,6 +37,7 @@ impl PayloadId {
         match self {
             Self::Visuals => "Visuals",
             Self::Fdpclient => "FDPClient",
+            Self::Fdplunar => "FDP Lunar",
         }
     }
 
@@ -38,6 +45,7 @@ impl PayloadId {
         match self {
             Self::Visuals => "xyz/zywl/visuals/injection/Loader.class",
             Self::Fdpclient => "net/zywl/fdp/injection/Loader.class",
+            Self::Fdplunar => "net/ccbluex/liquidbounce/injection/bootstrap/LunarAgent.class",
         }
     }
 
@@ -48,6 +56,7 @@ impl PayloadId {
                 "xyz/zywl/visuals/core/ZywlVisuals.class",
             ],
             Self::Fdpclient => &["net/zywl/fdp/FDPClient.class"],
+            Self::Fdplunar => &[],
         }
     }
 }
@@ -98,11 +107,27 @@ pub fn validate_jar(source: &Path, id: PayloadId) -> Result<(), String> {
         PayloadId::Visuals => {
             manifest_value(&mut archive, "Zavz-Entry-Class").map(|class| class_file(&class))
         }
-        PayloadId::Fdpclient => None,
+        PayloadId::Fdpclient | PayloadId::Fdplunar => None,
     }
     .unwrap_or_else(|| id.entry().to_string());
     if archive.index_for_name(&entry).is_none() {
         return Err(wrong());
+    }
+    if id == PayloadId::Fdplunar {
+        return if manifest_value(&mut archive, "FDP-Lunar-Bundle").as_deref() == Some("1.8.9")
+            && manifest_value(&mut archive, "Agent-Class").as_deref()
+                == Some("net.ccbluex.liquidbounce.injection.bootstrap.LunarAgent")
+            && manifest_value(&mut archive, "FDP-Payload-Resource").as_deref()
+                == Some("FDPClient.jar")
+            && archive.index_for_name("FDPClient.jar").is_some()
+        {
+            Ok(())
+        } else {
+            Err(
+                "Choose the current FDPClient-b17-lunar.jar bundle for native Lunar startup."
+                    .into(),
+            )
+        };
     }
     if id
         .known_cores()
@@ -124,6 +149,7 @@ pub struct PayloadConfiguration {
     pub allow_multiple: bool,
     pub visuals_jar: String,
     pub fdpclient_jar: String,
+    pub fdp_lunar_jar: String,
 }
 
 pub fn root() -> PathBuf {
@@ -198,6 +224,7 @@ impl Default for PayloadConfiguration {
             fdpclient_jar: jar_path(PayloadId::Fdpclient)
                 .to_string_lossy()
                 .into_owned(),
+            fdp_lunar_jar: jar_path(PayloadId::Fdplunar).to_string_lossy().into_owned(),
         }
     }
 }
@@ -206,6 +233,9 @@ impl PayloadConfiguration {
     pub fn validate(&self) -> Result<(), String> {
         if self.selected.is_empty() {
             return Err("Select a project to load.".into());
+        }
+        if self.selected.contains(&PayloadId::Fdplunar) && self.selected.len() != 1 {
+            return Err("FDP Lunar uses its own startup DLL. Select it on its own.".into());
         }
         if self.selected.len() > 2 || (self.selected.len() > 1 && !self.allow_multiple) {
             return Err("Turn on \"Load both\" before selecting both projects.".into());
@@ -220,12 +250,14 @@ impl PayloadConfiguration {
         match id {
             PayloadId::Visuals => &self.visuals_jar,
             PayloadId::Fdpclient => &self.fdpclient_jar,
+            PayloadId::Fdplunar => &self.fdp_lunar_jar,
         }
     }
 
     pub fn with_resolved_paths(mut self) -> Self {
         self.visuals_jar = resolve_or_default(&self.visuals_jar, PayloadId::Visuals);
         self.fdpclient_jar = resolve_or_default(&self.fdpclient_jar, PayloadId::Fdpclient);
+        self.fdp_lunar_jar = resolve_or_default(&self.fdp_lunar_jar, PayloadId::Fdplunar);
         self
     }
 
@@ -239,7 +271,7 @@ impl PayloadConfiguration {
         if selected.is_empty() {
             selected.push(PayloadId::Visuals);
         }
-        if !self.allow_multiple {
+        if !self.allow_multiple || selected.contains(&PayloadId::Fdplunar) {
             selected.truncate(1);
         }
         self.selected = selected;
@@ -253,6 +285,7 @@ impl PayloadConfiguration {
             match id {
                 PayloadId::Visuals => self.visuals_jar = path,
                 PayloadId::Fdpclient => self.fdpclient_jar = path,
+                PayloadId::Fdplunar => self.fdp_lunar_jar = path,
             }
         }
         self
@@ -570,10 +603,15 @@ fn process_alive(pid: u32) -> bool {
     system.refresh_process(target)
 }
 
-pub fn wait_result(pid: u32, path: &Path) -> Result<(), String> {
+pub fn wait_result(pid: u32, path: &Path, early_lunar: bool) -> Result<(), String> {
+    let timeout = if early_lunar {
+        Duration::from_secs(300)
+    } else {
+        RESULT_TIMEOUT
+    };
     let start = Instant::now();
     let mut last_alive_check = Instant::now();
-    while start.elapsed() < RESULT_TIMEOUT {
+    while start.elapsed() < timeout {
         match fs::read_to_string(path) {
             Ok(result) if result == "ok" => return Ok(()),
             Ok(result) if result.starts_with("error: ") => return Err(result[7..].to_string()),
@@ -598,6 +636,29 @@ pub fn wait_result(pid: u32, path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lunar_agent_is_a_separate_single_project() {
+        let mut config = PayloadConfiguration {
+            selected: vec![PayloadId::Fdplunar],
+            ..Default::default()
+        };
+        assert!(config.validate().is_ok());
+        let plan = plan_text(
+            42,
+            &config,
+            &[(
+                PayloadId::Fdplunar,
+                PathBuf::from(r"C:\FDP\current-lunar.jar"),
+            )],
+        )
+        .unwrap();
+        assert!(plan.contains("id=fdplunar"));
+        assert!(!plan.contains("id=fdpclient"));
+        config.allow_multiple = true;
+        config.selected.push(PayloadId::Visuals);
+        assert!(config.validate().is_err());
+    }
 
     #[test]
     fn single_visuals_does_not_emit_fdpclient() {
@@ -660,6 +721,7 @@ mod tests {
             allow_multiple: false,
             visuals_jar: String::new(),
             fdpclient_jar: "   ".into(),
+            fdp_lunar_jar: String::new(),
         }
         .healed();
         assert_eq!(healed.selected, vec![PayloadId::Visuals]);
@@ -699,11 +761,12 @@ mod tests {
                 allow_multiple: false,
                 visuals_jar: r"%USERPROFILE%\.zywl\visuals\release.jar".into(),
                 fdpclient_jar: String::new(),
+                fdp_lunar_jar: String::new(),
             },
             false,
             &|_| None,
         );
-        assert_eq!(statuses.len(), 2);
+        assert_eq!(statuses.len(), PayloadId::ALL.len());
         let home = dirs::home_dir().unwrap();
         for status in statuses {
             assert!(!status.path.contains('%'), "{}", status.path);
@@ -733,6 +796,7 @@ mod tests {
             allow_multiple: false,
             visuals_jar: r"C:\does\not\exist\visuals.jar".into(),
             fdpclient_jar: r"C:\does\not\exist\fdp.jar".into(),
+            fdp_lunar_jar: r"C:\does\not\exist\fdp-lunar.jar".into(),
         }
         .healed();
         assert_eq!(

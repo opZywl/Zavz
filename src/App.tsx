@@ -100,6 +100,7 @@ function App() {
     allowMultiple: false,
     visualsJar: '',
     fdpclientJar: '',
+    fdpLunarJar: '',
   });
   const [fdpWrapper, setFdpWrapper] = useState<FdpWrapper>('auto');
   const [jvmArgs, setJvmArgs] = useState('-Xmx4G -XX:+UseG1GC -noverify');
@@ -313,8 +314,10 @@ function App() {
         request: {
           target,
           dllPath: path,
-          method: method ?? METHOD_TO_BACKEND[injectionMethod] ?? 'standard',
-          payloads: mode === 'detect' ? payloads : null,
+          method: payloads.selected.includes('fdplunar')
+            ? 'standard'
+            : (method ?? METHOD_TO_BACKEND[injectionMethod] ?? 'standard'),
+          payloads: mode === 'detect' || payloads.selected.includes('fdplunar') ? payloads : null,
         },
       });
 
@@ -339,7 +342,9 @@ function App() {
         addLog(assets, 'info');
 
         onProgress?.(15, 'Resolving the native loader…');
-        const resolvedPath = await invoke<string>('resolve_loader_dll');
+        const resolvedPath = await invoke<string>('resolve_loader_dll', {
+          configuration: payloads,
+        });
         setDllPath(resolvedPath);
 
         if (pids.length > 0) {
@@ -380,23 +385,32 @@ function App() {
     }
   };
 
-  const handleWatcherToggle = async (enabled: boolean) => {
+  const handleWatcherToggle = async (enabled: boolean, propagateError = false) => {
     if (!isTauriRuntime()) {
       addLog('Process watcher requires the desktop runtime.', 'warning');
+      if (propagateError) throw new Error('Process watcher requires the desktop runtime.');
       return;
     }
-    if (enabled && !dllPath) {
+    if (enabled && !dllPath && !payloads.selected.includes('fdplunar')) {
       addLog('Select a DLL before starting the watcher.', 'error');
+      if (propagateError) throw new Error('Select a DLL before starting the watcher.');
       return;
     }
     try {
-      const watcherDll = enabled ? await invoke<string>('resolve_loader_dll') : dllPath;
+      if (enabled && payloads.selected.includes('fdplunar')) {
+        await invoke<string>('ensure_payload_assets', { configuration: payloads });
+      }
+      const watcherDll = enabled
+        ? await invoke<string>('resolve_loader_dll', { configuration: payloads })
+        : dllPath;
       const result = enabled
         ? await invoke<string>('start_watcher', {
             request: {
-              target: targetProcess,
+              target: payloads.selected.includes('fdplunar') ? 'lunar' : targetProcess,
               dllPath: watcherDll,
-              method: METHOD_TO_BACKEND[injectionMethod] ?? 'standard',
+              method: payloads.selected.includes('fdplunar')
+                ? 'standard'
+                : (METHOD_TO_BACKEND[injectionMethod] ?? 'standard'),
               payloads,
             },
           })
@@ -406,6 +420,7 @@ function App() {
     } catch (error) {
       setWatcherActive(false);
       addLog(`Watcher failed: ${String(error)}`, 'error');
+      if (propagateError) throw error;
     }
   };
 
@@ -426,7 +441,11 @@ function App() {
       return;
     }
     const fdpPath =
-      payloads.selected[0] === 'visuals' ? payloads.visualsJar : payloads.fdpclientJar;
+      payloads.selected[0] === 'visuals'
+        ? payloads.visualsJar
+        : payloads.selected[0] === 'fdplunar'
+          ? payloads.fdpLunarJar
+          : payloads.fdpclientJar;
     if (!fdpPath) {
       addLog('Select a JAR file first.', 'error');
       return;
@@ -541,6 +560,8 @@ function App() {
         setDllPath={setDllPath}
         fdpMode={fdpMode}
         setFdpMode={setFdpMode}
+        lunarStartup={payloads.selected.includes('fdplunar')}
+        onStartLunar={() => handleWatcherToggle(true, true)}
       />
       <ClientSelectionModal
         isOpen={isClientModalOpen}

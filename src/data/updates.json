@@ -1,8 +1,16 @@
 [
   {
+    "version": "1.1.2",
+    "date": "11/11/2026",
+    "status": "current",
+    "highlights": ["Current FDP Lunar bundle through an embedded startup DLL"],
+    "fixes": ["Aligned Tauri dependencies and reproducible Rust builds"],
+    "features": ["FDP Lunar JAR selection", "Watch next Lunar startup without -javaagent"]
+  },
+  {
     "version": "1.1.0",
     "date": "18/07/2026",
-    "status": "current",
+    "status": "previous",
     "highlights": [
       "Portfolio design system with compact dark surfaces",
       "Classic launch, news and dock application layout",

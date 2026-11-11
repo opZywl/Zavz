@@ -34,6 +34,8 @@ interface InjectionModalProps {
   setDllPath: (path: string) => void;
   fdpMode: boolean;
   setFdpMode: (mode: boolean) => void;
+  lunarStartup?: boolean;
+  onStartLunar?: () => Promise<void>;
 }
 
 interface SelectedDll {
@@ -63,8 +65,11 @@ export function InjectionModal({
   setDllPath,
   fdpMode: _fdpMode,
   setFdpMode,
+  lunarStartup = false,
+  onStartLunar,
 }: InjectionModalProps) {
   const [step, setStep] = useState<Step>('select');
+  const [startingLunar, setStartingLunar] = useState(false);
   const [activeMode, setActiveMode] = useState<InjectMode | null>(null);
   const [selectedFile, setSelectedFile] = useState<SelectedDll | null>(null);
   const [manualError, setManualError] = useState('');
@@ -310,6 +315,35 @@ export function InjectionModal({
         )}
 
         <div className="ds-injection-body">
+          {step === 'select' && lunarStartup && (
+            <div className="ds-manual-payload">
+              <p className="ds-field-help">
+                Choose the current FDP Lunar JAR, start this watcher, then launch Lunar 1.8.9
+                without -javaagent.
+              </p>
+              <Button
+                variant="secondary"
+                loading={startingLunar}
+                disabled={!onStartLunar}
+                icon={<Radar size={16} />}
+                onClick={() => {
+                  setStartingLunar(true);
+                  setManualError('');
+                  void onStartLunar?.()
+                    .then(onClose)
+                    .catch((error: unknown) => setManualError(String(error)))
+                    .finally(() => setStartingLunar(false));
+                }}
+              >
+                Watch next Lunar startup
+              </Button>
+              {manualError && (
+                <p className="ds-field-error" role="alert">
+                  {manualError}
+                </p>
+              )}
+            </div>
+          )}
           {step === 'select' && (
             <div className="ds-mode-grid">
               <button
@@ -395,6 +429,26 @@ export function InjectionModal({
               >
                 Browse DLL
               </Button>
+              {lunarStartup && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    void invoke<string>('resolve_loader_dll', {
+                      configuration: {
+                        selected: ['fdplunar'],
+                        allowMultiple: false,
+                        visualsJar: '',
+                        fdpclientJar: '',
+                        fdpLunarJar: '',
+                      },
+                    })
+                      .then((path) => setManualDll(path, 'fdp-lunar.dll'))
+                      .catch((error: unknown) => setManualError(String(error)));
+                  }}
+                >
+                  Use bundled FDP Lunar DLL
+                </Button>
+              )}
               {manualError && (
                 <p className="ds-field-error" role="alert">
                   {manualError}

@@ -5,7 +5,7 @@ export interface InjectorConfig {
 }
 
 const DEFAULT_CONFIG: InjectorConfig = {
-  version: 'v1.1.0',
+  version: 'v1.1.2',
   showUpdateAlert: false,
   source: 'local',
 };

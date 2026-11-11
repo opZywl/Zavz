@@ -9,6 +9,8 @@ Discord: <a href="https://discord.gg/3XRFGeqEYD">discord.gg/3XRFGeqEYD</a><br>
 ## Installing ZAVZ
 Click [here](docs/INSTALLING.md) for instructions on how to install ZAVZ.
 
+For the current FDPClient on official Lunar Client 1.8.9, see [FDP Lunar startup loader](docs/FDP-LUNAR.md). Its dedicated DLL is included in ZAVZ; select the current Lunar bundle and arm the watcher before launching the game.
+
 Antivirus tools can flag injectors, including ZAVZ, because malware uses similar techniques. The source code is in this repository if you want to check it.
 
 ## The staff team

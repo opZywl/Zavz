@@ -44,12 +44,13 @@ export interface WatcherRequest {
   method: InjectionMethod;
 }
 
-export type PayloadId = 'visuals' | 'fdpclient';
+export type PayloadId = 'visuals' | 'fdpclient' | 'fdplunar';
 export interface PayloadConfiguration {
   selected: PayloadId[];
   allowMultiple: boolean;
   visualsJar: string;
   fdpclientJar: string;
+  fdpLunarJar: string;
 }
 
 export interface PayloadStatus {
@@ -79,7 +80,7 @@ export interface TauriCommands {
   inject_dll: (request: InjectRequest) => Promise<string>;
   start_watcher: (request: WatcherRequest) => Promise<string>;
   stop_watcher: () => Promise<string>;
-  resolve_loader_dll: () => Promise<string>;
+  resolve_loader_dll: (configuration?: PayloadConfiguration) => Promise<string>;
   ensure_payload_assets: (configuration: PayloadConfiguration) => Promise<string>;
   configure_payloads: (configuration: PayloadConfiguration) => Promise<PayloadConfiguration>;
   build_and_install_fdp_assets: () => Promise<string>;
@@ -98,7 +99,9 @@ export async function invokeCommand<K extends keyof TauriCommands>(
   const argumentName =
     command === 'save_settings'
       ? 'settings'
-      : command === 'configure_payloads' || command === 'ensure_payload_assets'
+      : command === 'configure_payloads' ||
+          command === 'ensure_payload_assets' ||
+          command === 'resolve_loader_dll'
         ? 'configuration'
         : 'request';
   return tauriInvoke(command, args ? { [argumentName]: args } : undefined) as Promise<

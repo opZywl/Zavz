@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Current FDP Lunar startup loading**
+  - A separate FDP Lunar project with a manual JAR picker and an embedded x64 DLL
+  - A watcher that loads the current Lunar bundle before Minecraft initializes, without a `-javaagent` argument
+  - Native loader sources, startup diagnostics, and rebuild instructions in `docs/FDP-LUNAR.md`
+
 - **Infrastructure Improvements**
   - ESLint and Prettier configuration for TypeScript/React
   - Clippy and Rustfmt configuration for Rust

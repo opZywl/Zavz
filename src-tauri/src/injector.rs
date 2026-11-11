@@ -463,6 +463,20 @@ pub fn resolve_injection_target(target: &str) -> Result<(OwnedProcess, ResolvedT
     if t.is_empty() {
         return Err("Process name cannot be empty.".to_string());
     }
+    if t.eq_ignore_ascii_case("lunar-startup") {
+        let candidates = collect_game_candidates(ClientPrefer::Lunar);
+        let candidate = candidates.iter().find(|p| p.kind == "lunar" && p.title.is_empty())
+            .ok_or("Waiting for a new Lunar game JVM. Start this watcher before launching Lunar 1.8.9.")?;
+        let process = OwnedProcess::from_pid(candidate.pid).map_err(|e| e.to_string())?;
+        return Ok((
+            process,
+            ResolvedTarget {
+                pid: candidate.pid,
+                name: candidate.name.clone(),
+                kind: "lunar".into(),
+            },
+        ));
+    }
 
     if let Ok(pid) = t.parse::<u32>() {
         let process = OwnedProcess::from_pid(pid)

@@ -11,7 +11,7 @@ sysinfo = "0.30"
 dll-syringe = { version = "0.17", default-features = false, features = ["syringe"] }
 tokio = { version = "1.37", features = ["sync", "time"] }
 # custom-protocol is required in release builds: without it the WebView tries the dev server at localhost:5173.
-tauri = { version = "2.3", features = ["custom-protocol"] }
+tauri = { version = "~2.12.0", features = ["custom-protocol"] }
 tauri-plugin-opener = "2"
 dirs = "5.0"
 rfd = "0.15"

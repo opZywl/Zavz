@@ -24,7 +24,7 @@ interface VersionModalProps {
   onSave: (configuration: PayloadConfiguration) => Promise<void>;
 }
 
-type JarField = 'visualsJar' | 'fdpclientJar';
+type JarField = 'visualsJar' | 'fdpclientJar' | 'fdpLunarJar';
 
 const PROJECTS: Array<{ id: PayloadId; field: JarField; detail: string; mark: ReactNode }> = [
   {
@@ -38,6 +38,12 @@ const PROJECTS: Array<{ id: PayloadId; field: JarField; detail: string; mark: Re
     field: 'fdpclientJar',
     detail: 'Client for Minecraft 1.8.9',
     mark: <img src="/img/icon/social/fdp-logo.png" alt="" />,
+  },
+  {
+    id: 'fdplunar',
+    field: 'fdpLunarJar',
+    detail: 'Current FDP agent through DLL. Start the watcher before launching Lunar 1.8.9.',
+    mark: <img src="/img/icon/social/lunar-client_logo.png" alt="" />,
   },
 ];
 
@@ -119,11 +125,12 @@ export function VersionModal({ isOpen, onClose, configuration, onSave }: Version
   const toggleProject = (id: PayloadId) => {
     setDraft((current) => ({
       ...current,
-      selected: current.allowMultiple
-        ? current.selected.includes(id)
-          ? current.selected.filter((value) => value !== id)
-          : [...current.selected, id]
-        : [id],
+      selected:
+        current.allowMultiple && id !== 'fdplunar' && !current.selected.includes('fdplunar')
+          ? current.selected.includes(id)
+            ? current.selected.filter((value) => value !== id)
+            : [...current.selected, id]
+          : [id],
     }));
     setError('');
   };
