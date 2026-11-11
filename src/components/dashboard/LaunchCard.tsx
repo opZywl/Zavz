@@ -51,6 +51,8 @@ const CLIENT_ICONS: Record<FdpWrapper, string> = {
   forge: '/img/icon/social/forge_logo.png',
 };
 
+const SHOW_INTERFACE_TOOL = false;
+
 const RELEASE_CHANGELOG = [
   'Added CheatBreaker, BadlionClient, CMClient inject',
   'Added Lunar Client/Forge',
@@ -155,9 +157,11 @@ export function LaunchCard({
         <Button variant="ghost" size="sm" icon={<FileCog size={14} />} onClick={onConfigureJar}>
           JAR
         </Button>
-        <Button variant="ghost" size="sm" icon={<Gauge size={14} />} onClick={onCustomize}>
-          Interface
-        </Button>
+        {SHOW_INTERFACE_TOOL && (
+          <Button variant="ghost" size="sm" icon={<Gauge size={14} />} onClick={onCustomize}>
+            Interface
+          </Button>
+        )}
       </div>
 
       {showStatus && (
