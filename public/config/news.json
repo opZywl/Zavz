@@ -28,5 +28,15 @@
     "imageUrl": "/img/news/clients.png",
     "linkText": "View clients",
     "url": "https://github.com/opZywl"
+  },
+  {
+    "id": "n4",
+    "category": "Visuals",
+    "title": "Julia Visuals",
+    "date": "02/11/2026",
+    "description": "Client-side visual effects and customization for Minecraft 1.8.9 on Lunar and Forge.",
+    "imageUrl": "/img/news/julia-visuals.webp",
+    "linkText": "Open Julia Visuals",
+    "url": "https://lucas-lima.xyz/archives/julia-visuals"
   }
 ]

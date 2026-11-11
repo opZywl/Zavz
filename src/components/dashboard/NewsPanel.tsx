@@ -53,9 +53,10 @@ export function NewsPanel({ items, state, onOpen, onRetry }: NewsPanelProps) {
         <div className="ds-news-grid">
           {visibleItems.map((item) => {
             const fillMedia =
-              /\/news\/(clients|mappings)\./i.test(item.imageUrl || '') ||
+              /\/news\/(clients|mappings|julia-visuals)\./i.test(item.imageUrl || '') ||
               item.category === 'Clients' ||
-              item.category === 'Mappings';
+              item.category === 'Mappings' ||
+              item.category === 'Visuals';
             const clientsMedia =
               /\/news\/clients\./i.test(item.imageUrl || '') || item.category === 'Clients';
             const logoMedia = /fdp-logo/i.test(item.imageUrl || '') || item.category === 'Release';
