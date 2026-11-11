@@ -66,11 +66,17 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
+      - name: Compute ZAVZ SHA-256
+        shell: pwsh
+        run: ./.github/scripts/zavz-sha256.ps1
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: zavz-${{ matrix.platform }}
           path: |
             src-tauri/target/release/bundle/
+            src-tauri/target/release/ZAVZ.exe
+            src-tauri/target/release/SHA256SUMS.txt
             !src-tauri/target/release/bundle/**/*.dSYM
           retention-days: 7
