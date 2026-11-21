@@ -1,0 +1,15 @@
+# Building ZAVZ
+
+You need Windows, Node.js 18 or newer, and the Rust toolchain `nightly-2026-01-14`.
+
+## Build commands
+```
+npm install
+npx tauri build
+```
+The executable is `src-tauri\target\release\ZAVZ.exe` and the installer is under `src-tauri\target\release\bundle\nsis`.
+
+For development, `npx tauri dev` runs the app against the Vite server.
+
+## Files bundled into ZAVZ
+`src/load` holds what ZAVZ ships. See [src/load/README.md](src/load/README.md).

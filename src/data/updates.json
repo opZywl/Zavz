@@ -1,0 +1,10 @@
+[
+  {
+    "version": "1.0.0",
+    "date": "11/11/2026",
+    "status": "current",
+    "highlights": ["FDPClient Inject and Julia for Minecraft 1.8.9"],
+    "fixes": ["Aligned Tauri dependencies and reproducible Rust builds"],
+    "features": ["FDPClient Inject JAR selection", "Watch next Lunar startup without -javaagent"]
+  }
+]

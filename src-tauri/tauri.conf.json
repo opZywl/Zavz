@@ -1,0 +1,55 @@
+{
+  "productName": "ZAVZ",
+  "version": "1.0.0",
+  "identifier": "xyz.lucas-lima.zavz",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "title": "ZAVZ",
+        "label": "main",
+        "width": 1000,
+        "minWidth": 1000,
+        "height": 670,
+        "minHeight": 670,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "decorations": false,
+        "transparent": true,
+        "visible": true,
+        "focus": true,
+        "windowEffects": {
+          "effects": ["acrylic"]
+        },
+        "shadow": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:5173 ws://localhost:5173 https://fdpinfo.github.io; img-src 'self' asset: https://asset.localhost https://mc-heads.net data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "category": "Utility",
+    "publisher": "Lucas Lima (Zywl)",
+    "copyright": "Copyright © 2026 Lucas Lima (Zywl)",
+    "homepage": "https://lucas-lima.xyz",
+    "shortDescription": "Native multi-client injection with automatic target detection.",
+    "longDescription": "ZAVZ loads a chosen Java project into a running Minecraft 1.8.9 process. Created by Lucas Lima (Zywl).",
+    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "targets": ["nsis"],
+    "resources": ["../src/load/*"],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    }
+  }
+}

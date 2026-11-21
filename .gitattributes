@@ -1,0 +1,4 @@
+# ZAVZ - opZywl | https://lucas-lima.xyz
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf

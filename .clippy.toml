@@ -1,0 +1,10 @@
+# Clippy Configuration
+# See: https://doc.rust-lang.org/clippy/
+
+# Allow or deny certain lint groups
+# pedantic = "warn"
+# nursery = "warn"
+# cargo = "warn"
+
+# Maximum cognitive complexity
+cognitive-complexity-threshold = 30
